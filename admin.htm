@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>GNC | Admin</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=Inter:wght@100;300;400;600&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0a0a0a;
+            color: white;
+        }
+
+        .font-sync {
+            font-family: 'Syncopate', sans-serif;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+
+<body class="min-h-screen p-6 md:p-12">
+
+    <header class="max-w-6xl mx-auto flex justify-between items-center mb-12">
+        <div>
+            <h1 class="font-sync text-xl tracking-tighter uppercase">GNC. <span class="text-white/20">Admin</span></h1>
+            <p class="text-[9px] uppercase tracking-[0.4em] text-white/40 mt-1">Management Console</p>
+        </div>
+        <button id="logout-btn"
+            class="text-[9px] uppercase tracking-widest border border-white/10 px-4 py-2 hover:bg-white hover:text-black transition">Logout</button>
+    </header>
+
+    <main class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        <section class="lg:col-span-1">
+            <div class="glass p-8 rounded-sm">
+                <h2 class="font-sync text-xs mb-8 tracking-widest uppercase">Add New Member</h2>
+                <form id="add-crew-form" class="space-y-6">
+                    <input type="text" id="crew-name" placeholder="NAME" required
+                        class="w-full bg-transparent border-b border-white/10 py-3 text-[10px] tracking-widest outline-none focus:border-white transition-all uppercase">
+
+                    <input type="text" id="crew-role" placeholder="ROLE" required
+                        class="w-full bg-transparent border-b border-white/10 py-3 text-[10px] tracking-widest outline-none focus:border-white transition-all uppercase">
+
+                    <div class="space-y-2">
+                        <label class="text-[9px] uppercase tracking-widest text-white/30">Photo from Device</label>
+                        <input type="file" id="crew-img-file" accept="image/*" required
+                            class="w-full bg-white/5 border border-white/5 py-3 px-4 text-[9px] outline-none cursor-pointer file:bg-transparent file:border-none file:text-white file:font-bold file:mr-4">
+                    </div>
+
+                    <button type="submit" id="submit-btn"
+                        class="w-full bg-white text-black py-4 text-[9px] font-bold uppercase tracking-widest hover:bg-zinc-200 transition">
+                        Add to Crew
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <section class="lg:col-span-2">
+            <div class="glass p-8 rounded-sm min-h-[400px]">
+                <h2 class="font-sync text-xs mb-8 tracking-widest uppercase">Current Crew List</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="border-b border-white/10">
+                                <th class="pb-4 text-[9px] uppercase tracking-widest text-white/30 font-normal">Member
+                                </th>
+                                <th class="pb-4 text-[9px] uppercase tracking-widest text-white/30 font-normal">Position
+                                </th>
+                                <th
+                                    class="pb-4 text-[9px] uppercase tracking-widest text-white/30 font-normal text-right">
+                                    Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="crew-table-body" class="divide-y divide-white/[0.02]">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script type="module" src="./js/admin.js"></script>
+</body>
+
+</html>

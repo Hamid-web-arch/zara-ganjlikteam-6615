@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>GNC | Manager Access</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=Inter:wght@100;300;900&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #000;
+        }
+
+        .font-sync {
+            font-family: 'Syncopate', sans-serif;
+        }
+
+        .font-fashion {
+            font-family: 'Georgia', serif;
+        }
+
+        @keyframes slow-zoom {
+            0% {
+                transform: scale(1);
+            }
+
+            100% {
+                transform: scale(1.1);
+            }
+        }
+
+        .bg-animate {
+            animation: slow-zoom 20s infinite alternate ease-in-out;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .text-stroke {
+            -webkit-text-stroke: 1px rgba(255, 255, 255, 0.3);
+            color: transparent;
+        }
+
+        input:-webkit-autofill {
+            -webkit-box-shadow: 0 0 0 30px black inset !important;
+            -webkit-text-fill-color: white !important;
+        }
+    </style>
+</head>
+
+<body class="antialiased text-white min-h-screen relative overflow-x-hidden">
+
+    <div class="fixed inset-0 z-0">
+        <img src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=2070"
+            class="w-full h-full object-cover opacity-40 bg-animate grayscale">
+        <div class="absolute inset-0 bg-gradient-to-b from-black/80 via-black/40 to-black"></div>
+    </div>
+
+    <main class="relative z-10 min-h-screen flex flex-col items-center justify-center p-4 md:p-8">
+
+        <div class="absolute top-8 left-8 md:top-12 md:left-20 flex flex-col gap-1">
+            <h1 class="font-sync text-xl md:text-2xl font-bold tracking-tighter">GNC.</h1>
+            <span class="text-[7px] md:text-[9px] uppercase tracking-[0.5em] text-white/20">6615-GENCLIK</span>
+        </div>
+
+        <div
+            class="w-full max-w-[1000px] grid grid-cols-1 md:grid-cols-2 glass overflow-hidden rounded-sm min-h-[500px] md:min-h-[600px]">
+
+            <div class="hidden md:flex flex-col justify-between p-10 lg:p-16 border-r border-white/10 bg-black/20">
+                <div class="space-y-4">
+                    <span class="text-[9px] uppercase tracking-[0.8em] text-white/30">Portal Status: Secure</span>
+                    <h2 class="text-5xl lg:text-7xl font-black uppercase tracking-tighter leading-none">
+                        Manager <br> <span class="text-stroke italic font-fashion lowercase font-light">Vault</span>
+                        <br> Access
+                    </h2>
+                </div>
+
+                <div class="space-y-6">
+                    <p class="text-[10px] text-white/50 leading-relaxed uppercase tracking-widest max-w-[250px]">
+                        Rəqəmsal idarəetmə panelinə daxil olmaq üçün menecer məlumatlarını daxil edin.
+                    </p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse"></div>
+                        <span class="text-[8px] uppercase tracking-widest text-white/30 font-mono">Restricted
+                            Area</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-8 sm:p-12 md:p-16 lg:p-20 flex flex-col justify-center bg-black/60 md:bg-black/40">
+                <div id="login-box" class="space-y-10 md:space-y-12">
+                    <div class="space-y-2 text-center md:text-left">
+                        <h3 class="font-sync text-2xl md:text-3xl font-bold tracking-tighter">IDENTIFY</h3>
+                        <p class="text-[9px] md:text-[10px] uppercase tracking-[0.4em] text-white/40">Credentials
+                            required</p>
+                    </div>
+
+                    <form id="login-form" class="space-y-6 md:space-y-8">
+                        <input type="email" id="login-email" placeholder="MANAGER EMAIL" required
+                            class="w-full bg-transparent border-b border-white/10 py-4 text-[10px] md:text-[11px] tracking-[0.3em] outline-none focus:border-white transition-all uppercase placeholder:text-white/20">
+
+                        <input type="password" id="login-password" placeholder="PASSWORD" required
+                            class="w-full bg-transparent border-b border-white/10 py-4 text-[10px] md:text-[11px] tracking-[0.3em] outline-none focus:border-white transition-all uppercase placeholder:text-white/20">
+
+                        <button type="submit"
+                            class="group relative w-full overflow-hidden border border-white/20 py-4 md:py-5 text-[9px] md:text-[10px] uppercase tracking-[0.6em] transition-all hover:border-white active:scale-[0.98]">
+                            <span class="relative z-10 transition-colors duration-500 group-hover:text-black">Verify &
+                                Enter</span>
+                            <div
+                                class="absolute inset-0 bg-white translate-y-full group-hover:translate-y-0 transition-transform duration-500">
+                            </div>
+                        </button>
+                    </form>
+
+                    <div class="text-center">
+                        <button id="open-reset"
+                            class="text-[8px] uppercase tracking-[0.3em] text-white/20 hover:text-white transition-all">Forgot
+                            password?</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8 md:mt-0 md:absolute md:bottom-12 md:right-20">
+            <a href="index.htm"
+                class="text-[9px] uppercase tracking-[0.5em] text-white/30 hover:text-white transition-all duration-300">
+                [ Exit System ]
+            </a>
+        </div>
+    </main>
+
+    <div id="reset-modal"
+        class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+        <div class="glass w-full max-w-md p-10 space-y-8 relative">
+            <button id="close-reset" class="absolute top-4 right-4 text-white/40 hover:text-white transition">✕</button>
+            <div class="space-y-2">
+                <h3 class="font-sync text-xl font-bold tracking-tighter">RESET ACCESS</h3>
+                <p class="text-[9px] uppercase tracking-[0.4em] text-white/40">Enter manager email for link</p>
+            </div>
+            <input type="email" id="reset-email-input" placeholder="EMAIL ADDRESS"
+                class="w-full bg-transparent border-b border-white/10 py-4 text-[10px] tracking-[0.3em] outline-none focus:border-white transition-all uppercase">
+            <button id="send-reset-btn"
+                class="w-full border border-white/20 py-4 text-[9px] uppercase tracking-[0.5em] hover:bg-white hover:text-black transition-all">
+                Send Reset Link
+            </button>
+        </div>
+    </div>
+
+    <script type="module" src="./js/auth.js"></script>
+</body>
+
+</html>
