@@ -1,10 +1,27 @@
 import { auth } from './firebase-config.js';
 import { 
     signInWithEmailAndPassword, 
-    sendPasswordResetEmail 
+    sendPasswordResetEmail,
+    onAuthStateChanged,
+    setPersistence,
+    browserLocalPersistence
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 console.log("✅ Manager Auth System Active");
+
+// --- SESSİYA YOXLANILMASI (AUTO-LOGIN) ---
+// Səhifə açılan kimi bu funksiya işə düşür
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        console.log("⚡ Aktiv sessiya tapıldı:", user.email);
+        // Əgər istifadəçi artıq daxil olubsa və login səhifəsindədirsə, birbaşa adminə göndər
+        if (window.location.pathname.includes("auth.htm")) {
+            window.location.href = "admin.htm";
+        }
+    } else {
+        console.log("📡 Aktiv sessiya yoxdur.");
+    }
+});
 
 // --- LOGIN LOGIC ---
 const loginForm = document.getElementById('login-form');
@@ -18,10 +35,14 @@ if (loginForm) {
 
         try {
             console.log("⏳ Verifying credentials...");
+            
+            // 1. Öncə sessiya növünü təyin edirik (Local = Brauzer yaddaşında qalsın)
+            await setPersistence(auth, browserLocalPersistence);
+            
+            // 2. Sonra giriş edirik
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             
             console.log("✅ Welcome, Manager:", userCredential.user.email);
-            // Giriş uğurludursa admin panelinə göndər
             window.location.href = "admin.htm"; 
 
         } catch (error) {
@@ -30,7 +51,6 @@ if (loginForm) {
         }
     });
 }
-
 // --- RESET PASSWORD LOGIC ---
 const resetModal = document.getElementById('reset-modal');
 const openResetBtn = document.getElementById('open-reset');

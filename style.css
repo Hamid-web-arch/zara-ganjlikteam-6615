@@ -94,3 +94,96 @@ body {
     background-color: white !important;
     border-bottom: 1px solid #e5e7eb !important; /* Scroll edəndə 1px */
 }
+
+/* Sonsuz Zoom (Ken Burns) Effekti */
+@keyframes infiniteZoom {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.15); /* 15% böyüyür */
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.animate-infinite-zoom {
+    animation: infiniteZoom 20s ease-in-out infinite;
+    will-change: transform; /* Performans üçün */
+}
+
+/* --- Staff Section Spesifik Stillər --- */
+
+/* Swiper Konteynerinin kənardan daşması */
+.staffSwiper {
+    overflow: visible !important; /* Kartların kəsilməməsi üçün */
+    padding-bottom: 50px !important;
+}
+
+/* Dairəvi Şəkil Konteyneri */
+.staff-img-wrapper {
+    width: 160px;
+    height: 160px;
+    margin: 0 auto 24px;
+    border-radius: 50%; /* Tam dairə */
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: #111; /* Şəkil yüklənənə qədər fon */
+    transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    z-index: 1;
+}
+
+/* Şəklin özü */
+.staff-img-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: grayscale(100%);
+    transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Hover Effekti: Slayd üzərinə gələndə */
+.swiper-slide:hover .staff-img-wrapper {
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.6);
+}
+
+.swiper-slide:hover .staff-img-wrapper img {
+    filter: grayscale(0%);
+    transform: scale(1.1);
+}
+
+/* Swiper Pagination (Nöqtələr) Dizaynı */
+.staffSwiper .swiper-pagination-bullet {
+    background: #fff !important;
+    opacity: 0.1 !important;
+    width: 6px;
+    height: 6px;
+    transition: all 0.4s ease;
+}
+
+.staffSwiper .swiper-pagination-bullet-active {
+    opacity: 1 !important;
+    width: 25px !important; /* Aktiv olanda uzanan xətt effekti */
+    border-radius: 10px;
+}
+
+/* Yazıların hərəkəti */
+.staff-info-box {
+    transition: transform 0.5s ease;
+}
+
+.swiper-slide:hover .staff-info-box {
+    transform: translateY(-5px);
+}
+
+/* Mobil tənzimləmə */
+@media (max-width: 768px) {
+    .staff-img-wrapper {
+        width: 130px;
+        height: 130px;
+    }
+}
