@@ -28,160 +28,179 @@
         input::placeholder {
             color: rgba(255, 255, 255, 0.2);
         }
+
+        #admin-main-content {
+            display: none;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: #0a0a0a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
     </style>
 </head>
 
 <body class="min-h-screen p-6 md:p-12">
-
-    <header class="max-w-6xl mx-auto flex justify-between items-center mb-12">
-        <div>
-            <h1 class="font-sync text-xl tracking-tighter uppercase">GNC. <span class="text-white/20">Admin</span></h1>
-            <p class="text-[9px] uppercase tracking-[0.4em] text-white/40 mt-1">Management Console</p>
-        </div>
-        <button id="logout-btn"
-            class="text-[9px] uppercase tracking-widest border border-white/10 px-4 py-2 hover:bg-white hover:text-black transition">Logout</button>
-    </header>
-
-
-
-    <main class="max-w-6xl mx-auto">
-        <!-- FOR HERO SECTION -->
-        <div class="mt-16">
-            <div class="max-w-6xl mx-auto mb-8">
-                <h2 class="text-[20px] uppercase tracking-widest text-white font-bold">Hero Section Ayarları</h2>
+    <!-- Yoxlama müddətində görünəcək ekran -->
+    <div id="loader-overlay" class="loading-overlay">
+        <p class="font-sync text-[10px] tracking-[0.5em] uppercase animate-pulse">Authenticating...</p>
+    </div>
+    <div id="admin-main-content">
+        <header class="max-w-6xl mx-auto flex justify-between items-center mb-12">
+            <div>
+                <h1 class="font-sync text-xl tracking-tighter uppercase">GNC. <span class="text-white/20">Admin</span>
+                </h1>
+                <p class="text-[9px] uppercase tracking-[0.4em] text-white/40 mt-1">Management Console</p>
             </div>
+            <button id="logout-btn"
+                class="text-[9px] uppercase tracking-widest border border-white/10 px-4 py-2 hover:bg-white hover:text-black transition">Logout</button>
+        </header>
 
-            <div class="glass p-8 rounded-sm mb-8">
-                <form id="hero-settings-form" class="space-y-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div class="space-y-4">
-                            <label class="text-[9px] uppercase tracking-widest text-white/30 block">Başlıq
-                                Yazısı</label>
-                            <input type="text" id="hero-title-input" placeholder="Məsələn: GANDJLIK 6615"
-                                class="w-full bg-transparent border-b border-white/10 py-3 text-[10px] tracking-widest outline-none focus:border-white transition-all  text-white">
-                        </div>
+        <main class="max-w-6xl mx-auto">
+            <!-- FOR HERO SECTION -->
+            <div class="mt-16">
+                <div class="max-w-6xl mx-auto mb-8">
+                    <h2 class="text-[20px] uppercase tracking-widest text-white font-bold">Hero Section Ayarları</h2>
+                </div>
 
-                        <div class="space-y-4">
-                            <label class="text-[9px] uppercase tracking-widest text-white/30 block">Arxa Fon
-                                Şəkli</label>
-                            <div class="flex items-center gap-4">
-                                <input type="file" id="hero-file-input" accept="image/*"
-                                    class="flex-1 bg-white/5 border border-white/5 py-3 px-4 text-[9px] outline-none cursor-pointer">
-                                <div id="preview-box"
-                                    class="w-20 h-20 border border-white/10 rounded hidden overflow-hidden">
-                                    <img id="preview-img" class="w-full h-full object-cover">
+                <div class="glass p-8 rounded-sm mb-8">
+                    <form id="hero-settings-form" class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div class="space-y-4">
+                                <label class="text-[9px] uppercase tracking-widest text-white/30 block">Başlıq
+                                    Yazısı</label>
+                                <input type="text" id="hero-title-input" placeholder="Məsələn: GANDJLIK 6615"
+                                    class="w-full bg-transparent border-b border-white/10 py-3 text-[10px] tracking-widest outline-none focus:border-white transition-all  text-white">
+                            </div>
+
+                            <div class="space-y-4">
+                                <label class="text-[9px] uppercase tracking-widest text-white/30 block">Arxa Fon
+                                    Şəkli</label>
+                                <div class="flex items-center gap-4">
+                                    <input type="file" id="hero-file-input" accept="image/*"
+                                        class="flex-1 bg-white/5 border border-white/5 py-3 px-4 text-[9px] outline-none cursor-pointer">
+                                    <div id="preview-box"
+                                        class="w-20 h-20 border border-white/10 rounded hidden overflow-hidden">
+                                        <img id="preview-img" class="w-full h-full object-cover">
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <button type="submit"
-                        class="bg-white text-black px-12 py-4 text-[9px] font-bold uppercase tracking-widest hover:bg-zinc-200 transition">
-                        Yadda Saxla və Yenilə
-                    </button>
-                </form>
-            </div>
-        </div>
-        <!-- CHANGE CREW PANEL -->
-        <div>
-            <!-- HEAD TEXT FOR THE CREW -->
-            <div class="max-w-6xl mx-auto mb-8">
-                <h2 class="text-[20px] uppercase tracking-widest text-white font-bold">Change The Crew </h2>
-            </div>
-            <!-- CHANGE PANEL FOR THE CREW -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <section class="lg:col-span-1">
-                    <div class="glass p-8 rounded-sm">
-                        <h2 class="font-sync text-xs mb-8 tracking-widest uppercase">Add New Member</h2>
-                        <form id="add-crew-form" class="space-y-6">
-                            <input type="text" id="crew-name" placeholder="NAME" required
-                                class="w-full bg-transparent border-b border-white/10 py-3 text-[10px] tracking-widest outline-none focus:border-white transition-all ">
-
-                            <input type="text" id="crew-role" placeholder="ROLE" required
-                                class="w-full bg-transparent border-b border-white/10 py-3 text-[10px] tracking-widest outline-none focus:border-white transition-all ">
-
-                            <div class="space-y-2">
-                                <label class="text-[9px] uppercase tracking-widest text-white/30">Photo from
-                                    Device</label>
-                                <input type="file" id="crew-img-file" accept="image/*" required
-                                    class="w-full bg-white/5 border border-white/5 py-3 px-4 text-[9px] outline-none cursor-pointer file:bg-transparent file:border-none file:text-white file:font-bold file:mr-4">
-                            </div>
-
-                            <button type="submit" id="submit-btn"
-                                class="w-full bg-white text-black py-4 text-[9px] font-bold uppercase tracking-widest hover:bg-zinc-200 transition">
-                                Add to Crew
-                            </button>
-                        </form>
-                    </div>
-                </section>
-
-                <section class="lg:col-span-2">
-                    <div class="glass p-8 rounded-sm">
-                        <h2 class="font-sync text-xs mb-8 tracking-widest uppercase">Current Crew List</h2>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left">
-                                <thead>
-                                    <tr class="border-b border-white/10">
-                                        <th class="pb-4 text-[9px] uppercase tracking-widest text-white/30 font-normal">
-                                            Member
-                                        </th>
-                                        <th class="pb-4 text-[9px] uppercase tracking-widest text-white/30 font-normal">
-                                            Position
-                                        </th>
-                                        <th
-                                            class="pb-4 text-[9px] uppercase tracking-widest text-white/30 font-normal text-right">
-                                            Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="crew-table-body" class="divide-y divide-white/[0.02]">
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </section>
-            </div>
-            <!-- CHANGE PANEL FOR EMPLOYERS -->
-            <section class="mt-12 p-8 glass border-t border-white/10">
-                <h2 class="font-sync text-xl font-bold tracking-tighter mb-6 text-white">MANAGE STAFF (Employees)</h2>
-
-                <form id="add-staff-form" class="space-y-6 max-w-md">
-                    <input type="text" id="staff-name" placeholder="EMPLOYEE NAME" required
-                        class="w-full bg-transparent border-b border-white/10 py-3 text-[10px] tracking-[0.3em] outline-none focus:border-white transition-all ">
-
-                    <input type="text" id="staff-role" placeholder="ROLE (e.g. Sales Assistant)" required
-                        class="w-full bg-transparent border-b border-white/10 py-3 text-[10px] tracking-[0.3em] outline-none focus:border-white transition-all ">
-
-                    <div class="space-y-2">
-                        <label class="text-[9px] text-white/40 tracking-widest uppercase">Employee Photo</label>
-                        <input type="file" id="staff-img-file" accept="image/*"
-                            class="w-full text-[9px] text-white/40 file:bg-white/10 file:border-none file:text-white file:px-4 file:py-2 file:rounded-sm hover:file:bg-white/20">
-                    </div>
-
-                    <button type="submit" id="staff-submit-btn"
-                        class="w-full border border-white/20 py-4 text-[9px] uppercase tracking-[0.6em] hover:bg-white hover:text-black transition-all">
-                        Add to Staff
-                    </button>
-                </form>
-
-                <div class="mt-10 overflow-x-auto">
-                    <table class="w-full text-left">
-                        <thead>
-                            <tr class="border-b border-white/5 text-[8px] uppercase tracking-[0.4em] text-white/20">
-                                <th class="pb-4 font-light">Staff Member</th>
-                                <th class="pb-4 font-light">Role</th>
-                                <th class="pb-4 text-right font-light">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="staff-table-body">
-                        </tbody>
-                    </table>
+                        <button type="submit"
+                            class="bg-white text-black px-12 py-4 text-[9px] font-bold uppercase tracking-widest hover:bg-zinc-200 transition">
+                            Yadda Saxla və Yenilə
+                        </button>
+                    </form>
                 </div>
-            </section>
-        </div>
+            </div>
+            <!-- CHANGE CREW PANEL -->
+            <div>
+                <!-- HEAD TEXT FOR THE CREW -->
+                <div class="max-w-6xl mx-auto mb-8">
+                    <h2 class="text-[20px] uppercase tracking-widest text-white font-bold">Change The Crew </h2>
+                </div>
+                <!-- CHANGE PANEL FOR THE CREW -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <section class="lg:col-span-1">
+                        <div class="glass p-8 rounded-sm">
+                            <h2 class="font-sync text-xs mb-8 tracking-widest uppercase">Add New Member</h2>
+                            <form id="add-crew-form" class="space-y-6">
+                                <input type="text" id="crew-name" placeholder="NAME" required
+                                    class="w-full bg-transparent border-b border-white/10 py-3 text-[10px] tracking-widest outline-none focus:border-white transition-all ">
 
-    </main>
+                                <input type="text" id="crew-role" placeholder="ROLE" required
+                                    class="w-full bg-transparent border-b border-white/10 py-3 text-[10px] tracking-widest outline-none focus:border-white transition-all ">
 
+                                <div class="space-y-2">
+                                    <label class="text-[9px] uppercase tracking-widest text-white/30">Photo from
+                                        Device</label>
+                                    <input type="file" id="crew-img-file" accept="image/*" required
+                                        class="w-full bg-white/5 border border-white/5 py-3 px-4 text-[9px] outline-none cursor-pointer file:bg-transparent file:border-none file:text-white file:font-bold file:mr-4">
+                                </div>
 
+                                <button type="submit" id="submit-btn"
+                                    class="w-full bg-white text-black py-4 text-[9px] font-bold uppercase tracking-widest hover:bg-zinc-200 transition">
+                                    Add to Crew
+                                </button>
+                            </form>
+                        </div>
+                    </section>
+
+                    <section class="lg:col-span-2">
+                        <div class="glass p-8 rounded-sm">
+                            <h2 class="font-sync text-xs mb-8 tracking-widest uppercase">Current Crew List</h2>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left">
+                                    <thead>
+                                        <tr class="border-b border-white/10">
+                                            <th
+                                                class="pb-4 text-[9px] uppercase tracking-widest text-white/30 font-normal">
+                                                Member
+                                            </th>
+                                            <th
+                                                class="pb-4 text-[9px] uppercase tracking-widest text-white/30 font-normal">
+                                                Position
+                                            </th>
+                                            <th
+                                                class="pb-4 text-[9px] uppercase tracking-widest text-white/30 font-normal text-right">
+                                                Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="crew-table-body" class="divide-y divide-white/[0.02]">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+                <!-- CHANGE PANEL FOR EMPLOYERS -->
+                <section class="mt-12 p-8 glass border-t border-white/10">
+                    <h2 class="font-sync text-xl font-bold tracking-tighter mb-6 text-white">MANAGE STAFF (Employees)
+                    </h2>
+
+                    <form id="add-staff-form" class="space-y-6 max-w-md">
+                        <input type="text" id="staff-name" placeholder="EMPLOYEE NAME" required
+                            class="w-full bg-transparent border-b border-white/10 py-3 text-[10px] tracking-[0.3em] outline-none focus:border-white transition-all ">
+
+                        <input type="text" id="staff-role" placeholder="ROLE (e.g. Sales Assistant)" required
+                            class="w-full bg-transparent border-b border-white/10 py-3 text-[10px] tracking-[0.3em] outline-none focus:border-white transition-all ">
+
+                        <div class="space-y-2">
+                            <label class="text-[9px] text-white/40 tracking-widest uppercase">Employee Photo</label>
+                            <input type="file" id="staff-img-file" accept="image/*"
+                                class="w-full text-[9px] text-white/40 file:bg-white/10 file:border-none file:text-white file:px-4 file:py-2 file:rounded-sm hover:file:bg-white/20">
+                        </div>
+
+                        <button type="submit" id="staff-submit-btn"
+                            class="w-full border border-white/20 py-4 text-[9px] uppercase tracking-[0.6em] hover:bg-white hover:text-black transition-all">
+                            Add to Staff
+                        </button>
+                    </form>
+
+                    <div class="mt-10 overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="border-b border-white/5 text-[8px] uppercase tracking-[0.4em] text-white/20">
+                                    <th class="pb-4 font-light">Staff Member</th>
+                                    <th class="pb-4 font-light">Role</th>
+                                    <th class="pb-4 text-right font-light">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="staff-table-body">
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+
+        </main>
+    </div>
 
 
     <script type="module" src="./js/admin.js"></script>

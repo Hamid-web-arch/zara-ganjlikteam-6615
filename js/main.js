@@ -149,8 +149,8 @@ onSnapshot(staffQuery, (snapshot) => {
                          class="loading="lazy"">
                 </div>
                 <div class="staff-info-box transform transition-transform duration-500 group-hover:-translate-y-2">
-                    <h3 class="font-sync text-[10px] text-white tracking-[0.2em] uppercase">${data.name}</h3>
-                    <p class="text-[8px] text-white/30 uppercase tracking-[0.4em] mt-2">${data.role}</p>
+                    <h3 class="font-sync text-[10px] text-white tracking-[0.2em] ">${data.name}</h3>
+                    <p class="text-[8px] text-white/30  tracking-[0.4em] mt-2">${data.role}</p>
                 </div>
             </div>
         `;

@@ -5,21 +5,40 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-// Global API KEY
+/* ----------------- CONFIG & ELEMENTS ------------------*/
 const IMGBB_API_KEY = 'b51274c83040a9aabda95abab390ad52';
+const content = document.getElementById('admin-main-content');
+const loader = document.getElementById('loader-overlay');
 
-/* ----------------- AUTH CHECK & INITIALIZATION ------------------*/
-// Səhifə yüklənən kimi ilk işimiz sessiyanı yoxlamaq olmalıdır
 onAuthStateChanged(auth, (user) => {
-    if (!user) {
+    if (user) {
+        // Giriş uğurludursa
+        if (content) content.style.display = 'block';
+        if (loader) loader.style.display = 'none';
+    } else {
+        // Giriş yoxdursa, birbaşa auth.htm-ə tulla
+        window.location.href = "../auth.htm";
+    }
+});
+
+/* ----------------- AUTH CHECK ------------------*/
+// Bütün yoxlamaları tək bir blokda birləşdiririk
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        console.log("Admin daxil olub:", user.email);
+        
+        // 1. Ekranı göstər
+        if (content) content.style.display = 'block';
+        if (loader) loader.style.display = 'none';
+
+        // 2. Dataları yüklə (Bu funksiyaların aşağıda yazıldığından əmin ol)
+        if (typeof loadHeroSettings === "function") loadHeroSettings();
+        if (typeof initCrewList === "function") initCrewList();
+        if (typeof initStaffList === "function") initStaffList();
+        
+    } else {
         console.log("Giriş edilməyib, yönləndirilir...");
         window.location.href = "auth.htm";
-    } else {
-        console.log("Admin daxil olub:", user.email);
-        // İstifadəçi daxil olubsa, dataları yükləyirik
-        loadHeroSettings();
-        initCrewList();
-        initStaffList();
     }
 });
 
