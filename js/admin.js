@@ -124,31 +124,36 @@ if (heroForm) {
         }
     });
 }
-
 /* ----------------- The CREW START ------------------*/
 const crewForm = document.getElementById('add-crew-form');
 const crewTable = document.getElementById('crew-table-body');
-const submitBtn = document.getElementById('submit-btn');
+const crewSubmitBtn = document.getElementById('crew-submit-btn');
+let editCrewId = null; // Birebir eyni məntiq: Redaktə rejimini yadda saxlayır
 
+// 1. Real-time Crew Siyahısı
 function initCrewList() {
     if (!crewTable) return;
-    const q = query(collection(db, "crew"), orderBy("createdAt", "desc"));
+    const qCrew = query(collection(db, "crew"), orderBy("createdAt", "desc"));
     
-    onSnapshot(q, (snapshot) => {
+    onSnapshot(qCrew, (snapshot) => {
         crewTable.innerHTML = "";
-        snapshot.forEach((memberDoc) => {
-            const member = memberDoc.data();
-            const memberId = memberDoc.id;
+        snapshot.forEach((docSnap) => {
+            const member = docSnap.data();
+            const memberId = docSnap.id; 
             
             crewTable.innerHTML += `
-                <tr class="group transition-all hover:bg-white/[0.02]">
+                <tr class="group border-b border-white/5 hover:bg-white/[0.02]">
                     <td class="py-4 flex items-center gap-3">
-                        <img src="${member.image}" class="w-10 h-10 object-cover rounded-sm grayscale group-hover:grayscale-0 transition-all">
+                        <img src="${member.image}" class="w-10 h-10 object-cover rounded-full grayscale group-hover:grayscale-0 transition-all">
                         <span class="text-[10px] uppercase tracking-widest text-white">${member.name}</span>
                     </td>
                     <td class="py-4 text-[9px] text-white/40 uppercase tracking-widest">${member.role}</td>
-                    <td class="py-4 text-right">
-                        <button onclick="deleteMember('${memberId}')" 
+                    <td class="py-4 text-right space-x-2">
+                        <button onclick="editCrewMember('${memberId}')" 
+                            class="text-[8px] text-blue-500/50 hover:text-blue-500 uppercase tracking-widest transition">
+                            [ Edit ]
+                        </button>
+                        <button onclick="deleteCrewMember('${memberId}')" 
                             class="text-[8px] text-red-500/40 hover:text-red-500 uppercase tracking-widest transition">
                             [ Remove ]
                         </button>
@@ -159,68 +164,139 @@ function initCrewList() {
     });
 }
 
-// Crew Add
+// 2. REDAKTƏ FUNKSİYASI (Məlumatları inputlara doldurur)
+window.editCrewMember = async (id) => {
+    try {
+        const { getDoc, doc: docRef } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+        const docSnap = await getDoc(docRef(db, "crew", id));
+
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            document.getElementById('crew-name').value = data.name;
+            document.getElementById('crew-role').value = data.role;
+            
+            editCrewId = id; // Redaktə rejiminə keçdik
+            if (crewSubmitBtn) crewSubmitBtn.innerText = "UPDATE CREW MEMBER";
+            if (crewForm) crewForm.scrollIntoView({ behavior: 'smooth' });
+        }
+    } catch (err) {
+        console.error("Məlumat gətirilərkən xəta:", err);
+    }
+};
+
+// 3. Crew Əlavə Etmə və ya Yeniləmə
 if (crewForm) {
     crewForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+        
         const nameInput = document.getElementById('crew-name');
         const roleInput = document.getElementById('crew-role');
         const fileInput = document.getElementById('crew-img-file');
         const file = fileInput.files[0];
-
-        if (!file) return alert("Zəhmət olmasa şəkil seçin.");
+        
+        const { updateDoc, addDoc, doc: fireDoc, collection: fireColl } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
 
         try {
-            submitBtn.innerText = "CHECKING...";
-            submitBtn.disabled = true;
-
-            const qCheck = query(collection(db, "crew"), where("name", "==", nameInput.value.trim()));
-            const querySnapshot = await getDocs(qCheck);
-
-            if (!querySnapshot.empty) {
-                alert("Bu adda üzv artıq mövcuddur!");
-                return;
+            if (crewSubmitBtn) {
+                crewSubmitBtn.innerText = "SAVING...";
+                crewSubmitBtn.disabled = true;
             }
 
-            submitBtn.innerText = "UPLOADING...";
-            const formData = new FormData();
-            formData.append('image', file);
+            let imageUrl = null;
 
-            const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
-                method: 'POST',
-                body: formData
-            });
-            const data = await response.json();
+            // Şəkil yükləmə məntiqi: Yalnız şəkil seçilibsə ImgBB-yə göndər
+            if (file) {
+                const formData = new FormData();
+                formData.append('image', file);
+                const resp = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const imgData = await resp.json();
+                if (imgData.success) imageUrl = imgData.data.url;
+            }
 
-            if (data.success) {
-                await addDoc(collection(db, "crew"), {
+            // --- REDAKTƏ (UPDATE) REJİMİ ---
+            if (editCrewId) {
+                const updateData = {
                     name: nameInput.value.trim(),
-                    role: roleInput.value,
-                    image: data.data.url,
+                    role: roleInput.value.trim(),
+                    updatedAt: serverTimestamp()
+                };
+                
+                // Əgər yeni şəkil YÜKLƏNİBSƏ, onu da obyektə əlavə et
+                // Yüklənməyibsə, bazadakı köhnə şəkil olduğu kimi qalacaq
+                if (imageUrl) {
+                    updateData.image = imageUrl;
+                }
+
+                await updateDoc(fireDoc(db, "crew", editCrewId), updateData);
+                alert("Məlumatlar uğurla yeniləndi!");
+                
+                // Formu sıfırla və rejimdən çıx
+                editCrewId = null;
+                if (crewSubmitBtn) crewSubmitBtn.innerText = "Add to Crew";
+            } 
+            // --- YENİ ƏLAVƏ (ADD) REJİMİ ---
+            else {
+                // Eyni adda üzvün olub-olmadığını yoxlayırıq (Unikal olması üçün)
+                const qCheck = query(fireColl(db, "crew"), where("name", "==", nameInput.value.trim()));
+                const querySnapshot = await getDocs(qCheck);
+
+                if (!querySnapshot.empty) {
+                    alert("Bu adda üzv artıq mövcuddur!");
+                    if (crewSubmitBtn) {
+                        crewSubmitBtn.innerText = "Add to Crew";
+                        crewSubmitBtn.disabled = false;
+                    }
+                    return;
+                }
+
+                if (!imageUrl) {
+                    imageUrl = "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png"; 
+                }
+
+                await addDoc(fireColl(db, "crew"), {
+                    name: nameInput.value.trim(),
+                    role: roleInput.value.trim(),
+                    image: imageUrl,
                     createdAt: serverTimestamp()
                 });
-                crewForm.reset();
-                alert("Uğurla əlavə edildi!");
+                alert("Yeni Crew üzvü əlavə edildi!");
             }
+
+            crewForm.reset();
         } catch (err) {
-            console.error("Crew əlavə xətası:", err);
-            alert("Xəta baş verdi.");
+            console.error("Xəta baş verdi:", err);
+            alert("Xəta baş verdi, konsola baxın.");
         } finally {
-            submitBtn.innerText = "Add to Crew";
-            submitBtn.disabled = false;
+            if (crewSubmitBtn) {
+                crewSubmitBtn.disabled = false;
+                if (!editCrewId) crewSubmitBtn.innerText = "Add to Crew";
+            }
         }
     });
 }
 
-window.deleteMember = async (id) => {
-    if(confirm("Are you sure?")) {
+// 4. Crew Silmə Funksiyası
+window.deleteCrewMember = async (id) => {
+    if(confirm("Bu Crew üzvünü silmək istədiyinizə əminsiniz?")) {
         try {
-            await deleteDoc(doc(db, "crew", id));
+            const { deleteDoc, doc: docRef } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+            await deleteDoc(docRef(db, "crew", id));
+            
+            // Əgər silinən üzv hal-hazırda redaktə olunurdusa, rejimi sıfırla
+            if (editCrewId === id) {
+                editCrewId = null;
+                if (crewSubmitBtn) crewSubmitBtn.innerText = "Add to Crew";
+                if (crewForm) crewForm.reset();
+            }
         } catch (error) {
-            console.error("Silərkən xəta:", error);
+            console.error(error);
         }
     }
 };
+/* ----------------- The CREW END ------------------*/
 /* ----------------- The STAFF START ------------------*/
 const staffForm = document.getElementById('add-staff-form');
 const staffTable = document.getElementById('staff-table-body');
@@ -236,7 +312,7 @@ function initStaffList() {
         staffTable.innerHTML = "";
         snapshot.forEach((docSnap) => {
             const member = docSnap.data();
-            const memberId = docSnap.id; // ID-ni buradan götürürük
+            const memberId = docSnap.id; 
             
             staffTable.innerHTML += `
                 <tr class="group border-b border-white/5 hover:bg-white/[0.02]">
@@ -336,11 +412,15 @@ if (staffForm) {
             else {
                 // Yeni işçi üçün şəkil mütləqdir
                 if (!imageUrl) {
-                    alert("Yeni işçi üçün şəkil mütləqdir!");
-                    staffSubmitBtn.disabled = false;
-                    staffSubmitBtn.innerText = "Add to Staff";
-                    return;
+                    imageUrl = "https://cdn-icons-png.flaticon.com/512/149/149071.png"; 
+                    // İstəsən yuxarıdakı linki istənilən minimalist bir boş profil şəkli linki ilə əvəzləyə bilərsən
                 }
+                // if (!imageUrl) {
+                //     alert("Yeni işçi üçün şəkil mütləqdir!");
+                //     staffSubmitBtn.disabled = false;
+                //     staffSubmitBtn.innerText = "Add to Staff";
+                //     return;
+                // }
 
                 await addDoc(fireColl(db, "staff"), {
                     name: nameInput.value.trim(),

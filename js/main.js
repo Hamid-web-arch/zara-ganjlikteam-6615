@@ -8,11 +8,16 @@ import {
     doc 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// 2. Dəyişənlərin Təyini
-const crewContainer = document.getElementById('crew-container');
-let swiperInstance = null;
+// 2. Dəyişənlərin Təyini (Header və Hero üçün)
 const header = document.getElementById('main-header');
 const navContent = document.getElementById('nav-content');
+
+// 3. Dəyişənlərin Təyini (Yeni 2 Sətirli Komanda Bölməsi üçün)
+const crewDisplay = document.getElementById('crew-display-container');
+const staffDisplay = document.getElementById('staff-display-container');
+
+let swiperCrewInstance = null;
+let swiperStaffInstance = null;
 
 /* -------------- Header Scroll Effect START --------------- */
 window.addEventListener('scroll', () => {
@@ -47,19 +52,16 @@ onSnapshot(heroDocRef, (snapshot) => {
     if (snapshot.exists()) {
         const data = snapshot.data();
         
-        // Mərkəzdəki böyük başlıq
         const heroTitle = document.getElementById('hero-title-text');
         if (heroTitle && data.title) {
             heroTitle.innerText = data.title;
         }
 
-        // Navbardakı məkan yazısı
         const navLoc = document.getElementById('nav-location');
         if (navLoc && data.title) {
             navLoc.innerText = data.title;
         }
 
-        // Background şəkil
         const bgImg = document.querySelector('section.relative img');
         if (bgImg && data.image) {
             bgImg.src = data.image;
@@ -68,121 +70,121 @@ onSnapshot(heroDocRef, (snapshot) => {
 });
 /* -------------- HERO Section END --------------- */
 
-/* -------------- THE CREW Section START --------------- */
-const crewQuery = query(collection(db, "crew"), orderBy("createdAt", "desc"));
-
-onSnapshot(crewQuery, (snapshot) => {
-    if (!crewContainer) return;
+/* -------------- NEW 2-ROW TEAM SECTION START --------------- */
+// Swiper motorlarını tam responsive parametrlərlə başladırıq
+function buildTeamSliders() {
+   const commonSliderOptions = {
+    slidesPerView: 1.5, // Mobildə yan tərəfdən sonrakı şəkil bir az görünsün
+    spaceBetween: 16,
+    grabCursor: true,   // İstifadəçiyə sürüşdürmə ikonası verir (Tək saxladıq)
+    allowTouchMove: true, // Həm mobildə barmaqla, həm PC-də mouse ilə sürüşdürmə
+    mousewheel: { forceToAxis: true },
+    observer: true,
+    observeParents: true,
+    updateOnWindowResize: true,
+    speed: 800, // Keçid sürəti hamar olsun deyə bura qaldırdıq
     
-    crewContainer.innerHTML = "";
-    snapshot.forEach((doc) => {
-        const member = doc.data();
-        const memberHTML = `
-            <div class="swiper-slide group cursor-pointer">
-                <div class="relative aspect-[3/4] overflow-hidden bg-gray-50 mb-6">
-                    <img src="${member.image}" 
-                         class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-[1200ms] ease-out group-hover:scale-105" 
-                         alt="${member.name}" />
-                </div>
-                <div class="space-y-1 transform group-hover:translate-x-2 transition-transform duration-500">
-                    <h3 class="text-[12px] font-bold uppercase tracking-[0.2em] text-black">${member.name}</h3>
-                    <p class="text-[10px] uppercase tracking-[0.3em] text-gray-400 font-light">${member.role}</p>
-                </div>
-            </div>
-        `;
-        crewContainer.innerHTML += memberHTML;
-    });
-
-    if (!snapshot.empty) {
-        setTimeout(() => {
-            initSwiper();
-        }, 100);
+    // Sərbəst və ipək kimi axan sürüşmə rejimi
+    freeMode: {
+        enabled: true,
+        sticky: false,
+        momentumBounce: false,
+    },
+    
+    // Ekran ölçülərinə görə dairələrin sayı
+    breakpoints: {
+        480: { slidesPerView: 2.2, spaceBetween: 20 },
+        768: { slidesPerView: 3.2, spaceBetween: 24 },
+        1024: { slidesPerView: 4, spaceBetween: 30 },
+        1440: { slidesPerView: 5, spaceBetween: 35 } // Böyük ekranlarda 5 dairə
     }
-});
+};
 
-function initSwiper() {
-    if (swiperInstance) swiperInstance.destroy(true, true);
+    if (document.querySelector('.crewSwiper') && !swiperCrewInstance) {
+        swiperCrewInstance = new Swiper(".crewSwiper", {
+            ...commonSliderOptions,
+            navigation: { nextEl: ".crew-next", prevEl: ".crew-prev" }
+        });
+    }
 
-    swiperInstance = new Swiper(".crewSwiper", {
-        slidesPerView: 1.2,
-        spaceBetween: 20,
-        grabCursor: true,
-        allowTouchMove: true,
-        mousewheel: {
-            forceToAxis: true,
-        },
-        navigation: {
-            nextEl: ".swiper-button-next-custom",
-            prevEl: ".swiper-button-prev-custom",
-        },
-        breakpoints: {
-            640: { slidesPerView: 2.2, spaceBetween: 30 },
-            1024: { slidesPerView: 3, spaceBetween: 50 },
-            1440: { slidesPerView: 4, spaceBetween: 70 }
-        }
-    });
+    if (document.querySelector('.staffSwiper') && !swiperStaffInstance) {
+        swiperStaffInstance = new Swiper(".staffSwiper", {
+            ...commonSliderOptions,
+            navigation: { nextEl: ".staff-next", prevEl: ".staff-prev" }
+        });
+    }
 }
-/* -------------- THE CREW Section END --------------- */
 
-/* -------------- THE STAFF Section START --------------- */
-// 1. Dəyişənləri təyin edirik
-const staffContainer = document.getElementById('staff-display-container');
-let staffSwiperInstance = null;
+// Slayderləri ilkin olaraq canlandırırıq
+buildTeamSliders();
 
-// 2. Firebase-dən 'staff' kolleksiyasını dinləyirik
-const staffQuery = query(collection(db, "staff"), orderBy("createdAt", "desc"));
-
-onSnapshot(staffQuery, (snapshot) => {
-    if (!staffContainer) return;
-    
-    staffContainer.innerHTML = ""; // Köhnə datanı təmizləyirik
+// 1. SƏTİR: THE CREW - 'crew' kolleksiyasından datanın çəkilməsi
+const qCrew = query(collection(db, "crew"), orderBy("createdAt", "desc"));
+onSnapshot(qCrew, (snapshot) => {
+    if (!crewDisplay) return;
+    crewDisplay.innerHTML = "";
     
     snapshot.forEach((doc) => {
-        const data = doc.data();
+        const item = doc.data();
+      const cardHTML = `
+    <div class="swiper-slide group cursor-pointer" 
+         style="display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; text-align: center !important; height: auto;">
         
-        // Sizin istədiyiniz dairəvi şəkil və hover effekti olan HTML struktur
-        const slideHTML = `
-            <div class="swiper-slide text-center group cursor-pointer">
-                <div class="staff-img-wrapper">
-                    <img src="${data.image}" 
-                         alt="${data.name}" 
-                         class="loading="lazy"">
-                </div>
-                <div class="staff-info-box transform transition-transform duration-500 group-hover:-translate-y-2">
-                    <h3 class="font-sync text-[10px] text-white tracking-[0.2em] ">${data.name}</h3>
-                    <p class="text-[8px] text-white/30  tracking-[0.4em] mt-2">${data.role}</p>
-                </div>
-            </div>
-        `;
-        staffContainer.insertAdjacentHTML('beforeend', slideHTML);
+        <div class="rounded-full overflow-hidden bg-white/5 mb-4 border border-white/5 relative select-none" 
+             style="width: 160px; height: 160px; min-width: 160px; min-height: 160px; display: flex !important; align-items: center !important; justify-content: center !important;">
+            <img src="${item.image}" 
+                 class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-[1000ms] ease-out group-hover:scale-105" 
+                 alt="${item.name || ''}" />
+        </div>
+        
+        <div class="space-y-1 transform group-hover:-translate-y-1 transition-transform duration-300" 
+             style="width: 100%; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important;">
+            <h3 class="font-sync text-[10px] text-white tracking-[0.15em] block truncate px-2" style="width: 100%; text-align: center !important;">${item.name || ''}</h3>
+            <p class="text-[8px] text-white/30 tracking-[0.3em] uppercase block truncate px-2" style="width: 100%; text-align: center !important;">${item.role || ''}</p>
+        </div>
+        
+    </div>
+`;
+        crewDisplay.insertAdjacentHTML('beforeend', cardHTML);
     });
 
-    // Data gəldikdən sonra Swiper-i başladırıq
-    if (!snapshot.empty) {
-        setTimeout(() => {
-            initStaffSwiper();
-        }, 150);
-    }
+    setTimeout(() => {
+        if (swiperCrewInstance) swiperCrewInstance.update();
+    }, 250);
 });
 
-// 3. Staff Swiper Funksiyası
-function initStaffSwiper() {
-    if (staffSwiperInstance) staffSwiperInstance.destroy(true, true);
-
-    staffSwiperInstance = new Swiper(".staffSwiper", {
-        slidesPerView: 1.5,
-        spaceBetween: 20,
-        centeredSlides: false,
-        grabCursor: true,
-        pagination: {
-            el: ".swiper-pagination",
-            clickable: true,
-        },
-        breakpoints: {
-            640: { slidesPerView: 2.5, spaceBetween: 30 },
-            1024: { slidesPerView: 4, spaceBetween: 40 },
-            1440: { slidesPerView: 5, spaceBetween: 50 }
-        }
+// 2. SƏTİR: THE STAFF - 'staff' kolleksiyasından datanın çəkilməsi
+const qStaff = query(collection(db, "staff"), orderBy("createdAt", "desc"));
+onSnapshot(qStaff, (snapshot) => {
+    if (!staffDisplay) return;
+    staffDisplay.innerHTML = "";
+    
+    snapshot.forEach((doc) => {
+        const item = doc.data();
+     const cardHTML = `
+    <div class="swiper-slide group cursor-pointer" 
+         style="display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; text-align: center !important; height: auto;">
+        
+        <div class="rounded-full overflow-hidden bg-white/5 mb-4 border border-white/5 relative select-none" 
+             style="width: 160px; height: 160px; min-width: 160px; min-height: 160px; display: flex !important; align-items: center !important; justify-content: center !important;">
+            <img src="${item.image}" 
+                 class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-[1000ms] ease-out group-hover:scale-105" 
+                 alt="${item.name || ''}" />
+        </div>
+        
+        <div class="space-y-1 transform group-hover:-translate-y-1 transition-transform duration-300" 
+             style="width: 100%; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important;">
+            <h3 class="font-sync text-[10px] text-white tracking-[0.15em] block truncate px-2" style="width: 100%; text-align: center !important;">${item.name || ''}</h3>
+            <p class="text-[8px] text-white/30 tracking-[0.3em] uppercase block truncate px-2" style="width: 100%; text-align: center !important;">${item.role || ''}</p>
+        </div>
+        
+    </div>
+`;
+        staffDisplay.insertAdjacentHTML('beforeend', cardHTML);
     });
-}
-/* -------------- THE STAFF Section END --------------- */
+
+    setTimeout(() => {
+        if (swiperStaffInstance) swiperStaffInstance.update();
+    }, 250);
+});
+/* -------------- NEW 2-ROW TEAM SECTION END --------------- */
