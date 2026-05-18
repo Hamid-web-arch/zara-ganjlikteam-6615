@@ -126,25 +126,34 @@ onSnapshot(qCrew, (snapshot) => {
     
     snapshot.forEach((doc) => {
         const item = doc.data();
-      const cardHTML = `
-    <div class="swiper-slide group cursor-pointer" 
-         style="display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; text-align: center !important; height: auto;">
+const cardHTML = `
+<div class="swiper-slide group cursor-pointer" 
+     style="display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; text-align: center !important; height: auto;">
+
+    <div class="rounded-full overflow-hidden bg-white/5 mb-4 border border-white/5 relative select-none" 
+         style="width: 160px; height: 160px; min-width: 160px; min-height: 160px; display: flex !important; align-items: center !important; justify-content: center !important;">
         
-        <div class="rounded-full overflow-hidden bg-white/5 mb-4 border border-white/5 relative select-none" 
-             style="width: 160px; height: 160px; min-width: 160px; min-height: 160px; display: flex !important; align-items: center !important; justify-content: center !important;">
-            <img src="${item.image}" 
-                 class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-[1000ms] ease-out group-hover:scale-105" 
-                 alt="${item.name || ''}" />
-        </div>
-        
-        <div class="space-y-1 transform group-hover:-translate-y-1 transition-transform duration-300" 
-             style="width: 100%; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important;">
-            <h3 class="font-sync text-[10px] text-white tracking-[0.15em] block truncate px-2" style="width: 100%; text-align: center !important;">${item.name || ''}</h3>
-            <p class="text-[8px] text-white/30 tracking-[0.3em] uppercase block truncate px-2" style="width: 100%; text-align: center !important;">${item.role || ''}</p>
-        </div>
-        
+        <img src="${item.image}" 
+             class="w-full h-full object-cover transition-all duration-[1000ms] ease-out 
+                    grayscale-0 scale-105 
+                    md:grayscale md:scale-100 md:group-hover:grayscale-0 md:group-hover:scale-105" 
+             alt="${item.name || ''}" />
     </div>
-`;
+
+    <div class="space-y-1 transition-transform duration-300 w-full
+                -translate-y-1 
+                md:translate-y-0 md:group-hover:-translate-y-1" 
+         style="display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important;">
+        
+        <h3 class="font-sync text-[10px] text-white tracking-[0.15em] block whitespace-normal wrap-break-words px-2" style="width: 100%; text-align: center !important;">
+            ${item.name || ''}
+        </h3>
+        <p class="text-[8px] text-white/30 tracking-[0.3em] uppercase block whitespace-normal wrap-break-words px-2" style="width: 100%; text-align: center !important;">
+            ${item.role || ''}
+        </p>
+    </div>
+
+</div>`;
         crewDisplay.insertAdjacentHTML('beforeend', cardHTML);
     });
 
@@ -162,24 +171,33 @@ onSnapshot(qStaff, (snapshot) => {
     snapshot.forEach((doc) => {
         const item = doc.data();
      const cardHTML = `
-    <div class="swiper-slide group cursor-pointer" 
-         style="display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; text-align: center !important; height: auto;">
+<div class="swiper-slide group cursor-pointer" 
+     style="display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; text-align: center !important; height: auto;">
+
+    <div class="rounded-full overflow-hidden bg-white/5 mb-4 border border-white/5 relative select-none" 
+         style="width: 160px; height: 160px; min-width: 160px; min-height: 160px; display: flex !important; align-items: center !important; justify-content: center !important;">
         
-        <div class="rounded-full overflow-hidden bg-white/5 mb-4 border border-white/5 relative select-none" 
-             style="width: 160px; height: 160px; min-width: 160px; min-height: 160px; display: flex !important; align-items: center !important; justify-content: center !important;">
-            <img src="${item.image}" 
-                 class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-[1000ms] ease-out group-hover:scale-105" 
-                 alt="${item.name || ''}" />
-        </div>
-        
-        <div class="space-y-1 transform group-hover:-translate-y-1 transition-transform duration-300" 
-             style="width: 100%; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important;">
-            <h3 class="font-sync text-[10px] text-white tracking-[0.15em] block truncate px-2" style="width: 100%; text-align: center !important;">${item.name || ''}</h3>
-            <p class="text-[8px] text-white/30 tracking-[0.3em] uppercase block truncate px-2" style="width: 100%; text-align: center !important;">${item.role || ''}</p>
-        </div>
-        
+        <img src="${item.image}" 
+             class="w-full h-full object-cover transition-all duration-[1000ms] ease-out 
+                    grayscale-0 scale-105 
+                    md:grayscale md:scale-100 md:group-hover:grayscale-0 md:group-hover:scale-105" 
+             alt="${item.name || ''}" />
     </div>
-`;
+
+    <div class="space-y-1 transition-transform duration-300 w-full
+                -translate-y-1 
+                md:translate-y-0 md:group-hover:-translate-y-1" 
+         style="display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important;">
+        
+        <h3 class="font-sync text-[10px] text-white tracking-[0.15em] block whitespace-normal wrap-break-words px-2" style="width: 100%; text-align: center !important;">
+            ${item.name || ''}
+        </h3>
+        <p class="text-[8px] text-white/30 tracking-[0.3em] uppercase block whitespace-normal wrap-break-words px-2" style="width: 100%; text-align: center !important;">
+            ${item.role || ''}
+        </p>
+    </div>
+
+</div>`;
         staffDisplay.insertAdjacentHTML('beforeend', cardHTML);
     });
 
