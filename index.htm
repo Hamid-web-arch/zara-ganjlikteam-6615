@@ -7,6 +7,9 @@
     <link rel="stylesheet" href="output.css">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
+        integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
     <title>GNC | Gandjlik Team</title>
 </head>
 
@@ -47,6 +50,7 @@
             </div>
         </nav>
     </header>
+
     <!-- HERO SECTION -->
     <section class="relative h-screen flex items-center justify-center overflow-hidden">
         <img src="https://images.unsplash.com/photo-1441986300917-64674bd600d8"
@@ -97,8 +101,8 @@
                     </h2>
 
                     <div class="mt-12">
-                        <button
-                            class="relative group/btn overflow-hidden px-16 py-4 border border-white/30 text-white text-[10px] uppercase tracking-[0.5em] transition-all duration-500 hover:border-white hover:text-black">
+                        <button id="exploreMomentsBtn"
+                            class="relative group/btn overflow-hidden px-16 py-4 border border-white/30 text-white text-[10px] uppercase tracking-[0.5em] transition-all duration-500 hover:border-white hover:text-black cursor-pointer">
                             <span class="relative z-10">Explore Moments</span>
                             <div
                                 class="absolute inset-0 bg-white translate-y-full group-hover/btn:translate-y-0 transition-transform duration-500 ease-out">
@@ -109,6 +113,54 @@
             </div>
         </div>
     </section>
+    <!-- Modal for Moments -->
+    <div id="uploadModal"
+        class="fixed inset-0 z-[200] hidden items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+        <div class="w-full max-w-[450px] bg-white text-black p-8 md:p-10 relative border border-zinc-200">
+            <button id="closeUploadBtn"
+                class="absolute top-6 right-6 text-black hover:opacity-50 transition cursor-pointer">
+                <i class="fa-solid fa-xmark text-lg font-light"></i>
+            </button>
+
+            <div class="mb-8">
+                <h3 class="text-lg font-bold tracking-widest uppercase">YENİ AN PAYLAŞ</h3>
+                <p class="text-[10px] text-zinc-500 font-light tracking-wide mt-1">ZARA GANJLIK MALL STAFF PORTAL</p>
+            </div>
+
+            <form id="uploadForm" class="flex flex-col gap-6">
+                <div
+                    class="relative w-full h-40 border border-dashed border-zinc-300 flex flex-col items-center justify-center p-4 bg-zinc-50 hover:bg-zinc-100/50 transition cursor-pointer group">
+                    <input type="file" id="videoInput" accept="video/*"
+                        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" required />
+                    <div id="uploadPlaceholder"
+                        class="text-center flex flex-col items-center gap-2 pointer-events-none">
+                        <i
+                            class="fa-solid fa-arrow-up-from-bracket text-zinc-400 group-hover:text-black transition-colors text-lg"></i>
+                        <p class="text-[10px] font-bold tracking-widest uppercase">VİDEO SEÇİN</p>
+                        <p class="text-[9px] text-zinc-400 font-light">MP4 format, max 50MB</p>
+                    </div>
+                    <div id="fileSelectedName" class="hidden text-center p-2 pointer-events-none">
+                        <i class="fa-solid fa-circle-check text-green-600 text-lg mb-1"></i>
+                        <p class="text-[11px] font-medium truncate max-w-[300px]" id="fileNameText">video.mp4</p>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-1.5">
+                    <label for="captionInput" class="text-[10px] font-bold tracking-widest uppercase text-zinc-700">BU
+                        ANIN HEKAYƏSİ NƏDİR?</label>
+                    <textarea id="captionInput" rows="3"
+                        placeholder="Gənclik Mall komandası ilə keçən o maraqlı günü təsvir et..."
+                        class="w-full text-xs p-3 border border-zinc-300 focus:border-black outline-none resize-none font-light tracking-wide"
+                        required></textarea>
+                </div>
+
+                <button type="submit"
+                    class="w-full bg-black text-white text-xs font-bold tracking-widest py-3.5 uppercase hover:bg-zinc-800 transition cursor-pointer">
+                    YÜKLƏ VƏ TƏSDİQƏ GÖNDƏR
+                </button>
+            </form>
+        </div>
+    </div>
     <!-- Store Philosophy -->
     <section class="py-24 bg-white text-black px-6">
         <div class="max-w-6xl mx-auto grid md:grid-cols-2 gap-16 items-center">
@@ -703,9 +755,14 @@
 
         </div>
     </footer>
+    <div id="spa-moments-root"></div>
 
+
+
+    <script type="module" src="./js/moments.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <script type="module" src="./js/main.js"></script>
+
 
 </body>
 
