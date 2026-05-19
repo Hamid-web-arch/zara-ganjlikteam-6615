@@ -1,10 +1,9 @@
 import { db, auth } from './firebase-config.js';
 import { 
     collection, addDoc, serverTimestamp, onSnapshot, deleteDoc, doc, 
-    query, orderBy, where, getDocs, getDoc, setDoc 
+    query, orderBy, where, getDocs, getDoc, setDoc, updateDoc 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-
 /* ----------------- CONFIG & ELEMENTS ------------------*/
 const IMGBB_API_KEY = 'b51274c83040a9aabda95abab390ad52';
 const content = document.getElementById('admin-main-content');
@@ -455,9 +454,14 @@ window.deleteStaffMember = async (id) => {
 /* ----------------- The STAFF END ------------------*/
 
 
-/* ----------------- Explore Moments START ------------------*/
+// ========================================================
+// 🛡️ ADMIN.JS - GLOBAL FIRESTORE MOMENTS APP/REJ SYSTEM
+// ========================================================
+// ⚠️ TƏKRAR IMPORTLAR VƏ INITIALIZEAPP BURADAN SİLİNDİ! 
+// ⚠️ SİSTEM ARTIQ FAZLANIN ƏN YUXARISINDAKI 'db' INSTANSIYASI İLƏ İŞLƏYİR.
+
 document.addEventListener("DOMContentLoaded", () => {
-    // Cari olaraq hansı tabda olduğumuzu izləmək üçün ("pending" və ya "live")
+    // Cari olaraq hansı tabda olduğumuzu izləmək üçün ("pending" və ya "approved")
     let currentTab = "pending";
 
     // Tab elementlərini tapırıq
@@ -478,7 +482,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         tabLiveBtn.addEventListener("click", () => {
-            currentTab = "live";
+            currentTab = "approved"; // Qlobal bazada canlı videolar "approved" adlanır
             // Vizual olaraq aktiv tabı rəngləmək
             tabLiveBtn.className = "border border-white bg-white text-black text-[9px] font-bold tracking-widest px-4 py-2 uppercase transition cursor-pointer";
             tabPendingBtn.className = "border border-white/10 bg-transparent text-white/40 text-[9px] font-bold tracking-widest px-4 py-2 uppercase transition hover:border-white/20 cursor-pointer";
@@ -486,124 +490,170 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // ƏSAS RENDER FUNKSİYASI
-    function renderAdminMoments() {
+    // ƏSAS RENDER FUNKSİYASI (FIRESTORE-DAN REAL DATA ÇƏKİR)
+    async function renderAdminMoments() {
         const listContainer = document.getElementById("adminMomentsList");
         const pendingCountEl = document.getElementById("pendingCount");
         const liveCountEl = document.getElementById("liveCount");
         
         if (!listContainer) return;
 
-        // LocalStorage-dən dataları oxuyuruq
-        const pendingVideos = JSON.parse(localStorage.getItem("zara_pending_moments")) || [];
-        const approvedVideos = JSON.parse(localStorage.getItem("zara_approved_moments")) || [];
-        
-        // Sayğacları yeniləyirik
-        if (pendingCountEl) pendingCountEl.textContent = pendingVideos.length;
-        if (liveCountEl) liveCountEl.textContent = approvedVideos.length;
+        listContainer.innerHTML = `
+            <div class="col-span-full py-12 text-center text-white/40 text-[9px] tracking-widest uppercase font-light animate-pulse">
+                CONNECTING TO GLOBAL DATABASE...
+            </div>
+        `;
 
-        // Hansı siyahını göstərəcəyimizə qərar veririk
-        const activeList = (currentTab === "pending") ? pendingVideos : approvedVideos;
-
-        // Əgər siyahı boşdursa
-        if (activeList.length === 0) {
-            listContainer.innerHTML = `
-                <div class="col-span-full py-12 text-center text-white/20 text-[9px] tracking-widest uppercase font-light">
-                    No videos found in this section.
-                </div>
-            `;
-            return;
-        }
-
-        // Konteyneri təmizləyib videoları düzürük
-        listContainer.innerHTML = "";
-        
-        activeList.forEach((video, index) => {
-            // Əgər PENDING tabındadısa APPROVE/REJECT düymələri, LIVE tabındadısa sadəcə REMOVE düyməsi olacaq
-            let actionButtonsHTML = "";
+        try {
+            // 1. Sayğaclar üçün bütün videoları çəkirik (Statusuna görə filterləmək üçün)
+            const allMomentsQuery = query(collection(db, "approved_moments"), orderBy("createdAt", "desc"));
+            const allSnapshot = await getDocs(allMomentsQuery);
             
-            if (currentTab === "pending") {
-                actionButtonsHTML = `
-                    <button onclick="approveVideo(${index})" class="bg-white text-black text-[9px] font-bold tracking-widest py-3 uppercase transition hover:bg-zinc-200 cursor-pointer">
-                        APPROVE
-                    </button>
-                    <button onclick="rejectVideo(${index})" class="bg-transparent border border-white/10 text-white/40 text-[9px] font-bold tracking-widest py-3 uppercase transition hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/20 cursor-pointer">
-                        REJECT
-                    </button>
+            let pendingCount = 0;
+            let approvedCount = 0;
+            let activeList = [];
+
+            allSnapshot.forEach((docSnap) => {
+                const data = docSnap.data();
+                const item = { id: docSnap.id, ...data };
+
+                // Status sayğacı
+                if (data.status === "approved" || !data.status) { 
+                    approvedCount++;
+                    if (currentTab === "approved") activeList.push(item);
+                } else if (data.status === "pending") {
+                    pendingCount++;
+                    if (currentTab === "pending") activeList.push(item);
+                }
+            });
+
+            // Sayğacları ekranda yeniləyirik
+            if (pendingCountEl) pendingCountEl.textContent = pendingCount;
+            if (liveCountEl) liveCountEl.textContent = approvedCount;
+
+            // Əgər aktiv siyahı boşdursa
+            if (activeList.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="col-span-full py-12 text-center text-white/20 text-[9px] tracking-widest uppercase font-light">
+                        No videos found in this section.
+                    </div>
                 `;
-            } else {
-                // LIVE TABI ÜÇÜN SİLMƏ DÜYMƏSİ (Bütün eni əhatə edir)
-                actionButtonsHTML = `
-                    <button onclick="removeLiveVideo(${index})" class="col-span-2 bg-transparent border border-red-500/30 text-red-400 text-[9px] font-bold tracking-widest py-3 uppercase transition hover:bg-red-500/10 hover:border-red-500 cursor-pointer">
-                        REMOVE FROM LIVE FEED
-                    </button>
-                `;
+                return;
             }
 
-            const cardHTML = `
-                <div class="border border-white/5 bg-white/[0.02] p-4 rounded-sm flex flex-col justify-between gap-4 transition-all hover:border-white/10 animate-fadeIn">
-                    <div class="relative aspect-[9/16] w-full max-h-[260px] bg-black/50 rounded-sm overflow-hidden border border-white/5">
-                        <video src="${video.url}" class="w-full h-full object-cover" controls muted></video>
+            // Konteyneri təmizləyib videoları düzürük
+            listContainer.innerHTML = "";
+            
+            activeList.forEach((video) => {
+                let actionButtonsHTML = "";
+                
+                if (currentTab === "pending") {
+                    actionButtonsHTML = `
+                        <button data-id="${video.id}" class="approve-btn-trigger bg-white text-black text-[9px] font-bold tracking-widest py-3 uppercase transition hover:bg-zinc-200 cursor-pointer">
+                            APPROVE
+                        </button>
+                        <button data-id="${video.id}" class="reject-btn-trigger bg-transparent border border-white/10 text-white/40 text-[9px] font-bold tracking-widest py-3 uppercase transition hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/20 cursor-pointer">
+                            REJECT
+                        </button>
+                    `;
+                } else {
+                    actionButtonsHTML = `
+                        <button data-id="${video.id}" class="remove-btn-trigger col-span-2 bg-transparent border border-red-500/30 text-red-400 text-[9px] font-bold tracking-widest py-3 uppercase transition hover:bg-red-500/10 hover:border-red-500 cursor-pointer">
+                            REMOVE FROM LIVE FEED
+                        </button>
+                    `;
+                }
+
+                const cardHTML = `
+                    <div class="border border-white/5 bg-white/[0.02] p-4 rounded-sm flex flex-col justify-between gap-4 transition-all hover:border-white/10 animate-fadeIn" data-doc-id="${video.id}">
+                        <div class="relative aspect-[9/16] w-full max-h-[260px] bg-black/50 rounded-sm overflow-hidden border border-white/5">
+                            <video src="${video.url}" class="w-full h-full object-cover" controls muted></video>
+                        </div>
+                        
+                        <div class="flex flex-col gap-1">
+                            <span class="text-[8px] text-white/30 tracking-widest uppercase">Caption</span>
+                            <p class="text-[10px] text-white/80 font-light tracking-wide leading-relaxed uppercase">${video.caption}</p>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-3 pt-2 border-t border-white/5">
+                            ${actionButtonsHTML}
+                        </div>
                     </div>
-                    
-                    <div class="flex flex-col gap-1">
-                        <span class="text-[8px] text-white/30 tracking-widest uppercase">Caption</span>
-                        <p class="text-[10px] text-white/80 font-light tracking-wide leading-relaxed uppercase">${video.caption}</p>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-3 pt-2 border-t border-white/5">
-                        ${actionButtonsHTML}
-                    </div>
-                </div>
-            `;
-            listContainer.insertAdjacentHTML("beforeend", cardHTML);
-        });
+                `;
+                listContainer.insertAdjacentHTML("beforeend", cardHTML);
+            });
+
+            // Düymələrə klik hadisələrini təyin edirik
+            initActionListeners();
+
+        } catch (error) {
+            console.error("Firestore-dan data oxunarkən xəta:", error);
+            listContainer.innerHTML = `<div class="col-span-full py-12 text-center text-red-500 text-[9px]">ERROR LOADING DATABASE</div>`;
+        }
     }
 
-    // MANAGER VİDEONU TƏSDİQLƏYƏNDƏ
-    window.approveVideo = function(index) {
-        let pendingVideos = JSON.parse(localStorage.getItem("zara_pending_moments")) || [];
-        let approvedVideos = JSON.parse(localStorage.getItem("zara_approved_moments")) || [];
-        
-        const approvedVideo = pendingVideos.splice(index, 1)[0];
-        approvedVideos.unshift(approvedVideo);
-        
-        localStorage.setItem("zara_pending_moments", JSON.stringify(pendingVideos));
-        localStorage.setItem("zara_approved_moments", JSON.stringify(approvedVideos));
-        
-        renderAdminMoments();
-        alert("Moments video approved and added to the live feed! 🎉");
-    };
+    // DÜYMƏLƏRİN DİNAMİK İŞƏ SALINMASI
+    function initActionListeners() {
+        // Təsdiqləmə (Approve)
+        document.querySelectorAll(".approve-btn-trigger").forEach(btn => {
+            btn.addEventListener("click", async (e) => {
+                const docId = e.target.getAttribute("data-id");
+                e.target.textContent = "WAIT...";
+                e.target.disabled = true;
 
-    // PENDING VİDEONU RƏDD EDƏNDƏ (SİLƏNDƏ)
-    window.rejectVideo = function(index) {
-        if (confirm("Are you sure you want to reject this video proposal?")) {
-            let pendingVideos = JSON.parse(localStorage.getItem("zara_pending_moments")) || [];
-            pendingVideos.splice(index, 1);
-            localStorage.setItem("zara_pending_moments", JSON.stringify(pendingVideos));
-            renderAdminMoments();
-        }
-    };
+                try {
+                    const docRef = doc(db, "approved_moments", docId);
+                    await updateDoc(docRef, { status: "approved" });
+                    
+                    alert("Moments video approved and added to the live feed! 🎉");
+                    renderAdminMoments();
+                } catch (err) {
+                    alert("Approve xətası: " + err.message);
+                    renderAdminMoments();
+                }
+            });
+        });
 
-    // 🚀 YENİ: MÖVCUD CANLI VİDEONU SİYAHIDAN SİLMƏK FUNKSİYASI
-    window.removeLiveVideo = function(index) {
-        if (confirm("🚨 Diqqət! Bu video Moments platformasından (canlı yayından) tamamilə silinəcək. Əminsiniz?")) {
-            let approvedVideos = JSON.parse(localStorage.getItem("zara_approved_moments")) || [];
-            
-            // Seçilən videonu canlı siyahıdan silirik
-            approvedVideos.splice(index, 1);
-            
-            // Yenilənmiş siyahını yaddaşa yazırıq
-            localStorage.setItem("zara_approved_moments", JSON.stringify(approvedVideos));
-            
-            // Ekranı dərhal yeniləyirik
-            renderAdminMoments();
-            alert("Video successfully removed from the live feed. 🗑️");
-        }
-    };
+        // Rədd etmə (Reject)
+        document.querySelectorAll(".reject-btn-trigger").forEach(btn => {
+            btn.addEventListener("click", async (e) => {
+                const docId = e.target.getAttribute("data-id");
+                if (confirm("Are you sure you want to reject this video proposal?")) {
+                    e.target.textContent = "REJECTING...";
+                    e.target.disabled = true;
+
+                    try {
+                        await deleteDoc(doc(db, "approved_moments", docId));
+                        renderAdminMoments();
+                    } catch (err) {
+                        alert("Reject xətası: " + err.message);
+                        renderAdminMoments();
+                    }
+                }
+            });
+        });
+
+        // Canlıdan Silmə (Remove Live)
+        document.querySelectorAll(".remove-btn-trigger").forEach(btn => {
+            btn.addEventListener("click", async (e) => {
+                const docId = e.target.getAttribute("data-id");
+                if (confirm("🚨 Diqqət! Bu video Moments platformasından (canlı yayından) tamamilə silinəcək. Əminsiniz?")) {
+                    e.target.textContent = "REMOVING...";
+                    e.target.disabled = true;
+
+                    try {
+                        await deleteDoc(doc(db, "approved_moments", docId));
+                        alert("Video successfully removed from the live feed. 🗑️");
+                        renderAdminMoments();
+                    } catch (err) {
+                        alert("Silmə xətası: " + err.message);
+                        renderAdminMoments();
+                    }
+                }
+            });
+        });
+    }
 });
-/* ----------------- Explore Moments END ------------------*/
-
 // Logout
 const logoutBtn = document.getElementById('logout-btn');
 if (logoutBtn) {
