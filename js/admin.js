@@ -1,46 +1,57 @@
 import { db, auth } from './firebase-config.js';
-import { 
-    collection, addDoc, serverTimestamp, onSnapshot, deleteDoc, doc, 
-    query, orderBy, where, getDocs, getDoc, setDoc, updateDoc 
+import {
+    collection, addDoc, serverTimestamp, onSnapshot, deleteDoc, doc,
+    query, orderBy, where, getDocs, getDoc, setDoc, updateDoc
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import {
+    onAuthStateChanged,
+    signOut,
+    createUserWithEmailAndPassword
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 /* ----------------- CONFIG & ELEMENTS ------------------*/
-const IMGBB_API_KEY = 'b51274c83040a9aabda95abab390ad52';
+// admin.js və ya staff-profile.js-in ən başındakı importların yanına əlavə et:
+import { IMGBB_API_KEY } from './config.js';
 const content = document.getElementById('admin-main-content');
 const loader = document.getElementById('loader-overlay');
+let isAdminVerified = false; // Admini bir dəfə yoxladıqdan sonra true olacaq
 
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        // Giriş uğurludursa
-        if (content) content.style.display = 'block';
-        if (loader) loader.style.display = 'none';
-    } else {
-        // Giriş yoxdursa, birbaşa auth.htm-ə tulla
-        window.location.href = "../auth.htm";
-    }
-});
+/* ----------------- AUTH & ROLE CHECK (GUARDS ADMIN PANEL) ------------------*/
+onAuthStateChanged(auth, async (user) => {
+    // 1. Əgər admin artıq təsdiqlənibsə və istifadəçi hələ də odursa, heç nə etmə
+    if (isAdminVerified && auth.currentUser?.uid === user?.uid) return;
 
-/* ----------------- AUTH CHECK ------------------*/
-// Bütün yoxlamaları tək bir blokda birləşdiririk
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        console.log("Admin daxil olub:", user.email);
-        
-        // 1. Ekranı göstər
-        if (content) content.style.display = 'block';
-        if (loader) loader.style.display = 'none';
-
-        // 2. Dataları yüklə (Bu funksiyaların aşağıda yazıldığından əmin ol)
-        if (typeof loadHeroSettings === "function") loadHeroSettings();
-        if (typeof initCrewList === "function") initCrewList();
-        if (typeof initStaffList === "function") initStaffList();
-        
-    } else {
-        console.log("Giriş edilməyib, yönləndirilir...");
+    if (!user) {
         window.location.href = "auth.htm";
+        return;
+    }
+
+    try {
+        const staffSnap = await getDoc(doc(db, "staff", user.uid));
+        const crewSnap = await getDoc(doc(db, "crew", user.uid));
+
+        const userData = staffSnap.exists() ? staffSnap.data() : (crewSnap.exists() ? crewSnap.data() : null);
+        const isAdmin = userData?.accessLevel === "admin";
+
+        if (isAdmin) {
+            isAdminVerified = true; 
+            if (content) content.style.display = 'block';
+            if (loader) loader.style.display = 'none';
+
+            if (!window.adminInitialized) {
+                loadHeroSettings();
+                initCrewList();
+                initStaffList();
+                window.adminInitialized = true;
+            }
+        } else {
+            // Əgər admin deyilsə, profilə göndər
+            // Amma yoxla ki, bəlkə hələ də adminin özüdür, sadəcə məlumatı bazadan gec gəlir?
+            window.location.href = "../staff-profile.htm";
+        }
+    } catch (error) {
+        console.error("Auth Guard Xətası:", error);
     }
 });
-
 /* ----------------- Hero Settings START ------------------*/
 const heroForm = document.getElementById('hero-settings-form');
 const heroTitleInput = document.getElementById('hero-title-input');
@@ -55,7 +66,7 @@ async function loadHeroSettings() {
 
         if (docSnap.exists()) {
             const data = docSnap.data();
-            if(heroTitleInput) heroTitleInput.value = data.title || "";
+            if (heroTitleInput) heroTitleInput.value = data.title || "";
             if (data.image && previewImg) {
                 previewImg.src = data.image;
                 previewBox.classList.remove('hidden');
@@ -68,7 +79,7 @@ async function loadHeroSettings() {
 
 // Şəkil önbaxış (Preview)
 if (heroFileInput) {
-    heroFileInput.addEventListener('change', function() {
+    heroFileInput.addEventListener('change', function () {
         const file = this.files[0];
         if (file) {
             const reader = new FileReader();
@@ -104,7 +115,7 @@ if (heroForm) {
                     body: formData
                 });
                 const imgData = await resp.json();
-                if(imgData.success) imageUrl = imgData.data.url;
+                if (imgData.success) imageUrl = imgData.data.url;
             }
 
             await setDoc(doc(db, "settings", "hero"), {
@@ -123,379 +134,317 @@ if (heroForm) {
         }
     });
 }
+
 /* ----------------- The CREW START ------------------*/
 const crewForm = document.getElementById('add-crew-form');
 const crewTable = document.getElementById('crew-table-body');
 const crewSubmitBtn = document.getElementById('crew-submit-btn');
-let editCrewId = null; // Birebir eyni məntiq: Redaktə rejimini yadda saxlayır
+let editCrewId = null;
 
-// 1. Real-time Crew Siyahısı
 function initCrewList() {
     if (!crewTable) return;
-    const qCrew = query(collection(db, "crew"), orderBy("createdAt", "desc"));
-    
-    onSnapshot(qCrew, (snapshot) => {
+    onSnapshot(query(collection(db, "crew"), orderBy("createdAt", "desc")), (snapshot) => {
         crewTable.innerHTML = "";
         snapshot.forEach((docSnap) => {
-            const member = docSnap.data();
-            const memberId = docSnap.id; 
-            
+            const m = docSnap.data();
+            const img = m.image || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png';
+
+            // Cədvəldə rol hissəsinin yanında admin/user statusunu da kiçik qeyd edirik
+            const badge = m.accessLevel === 'admin' ? ' <span class="text-blue-400 text-[8px]">[ADMIN]</span>' : '';
+
             crewTable.innerHTML += `
-                <tr class="group border-b border-white/5 hover:bg-white/[0.02]">
-                    <td class="py-4 flex items-center gap-3">
-                        <img src="${member.image}" class="w-10 h-10 object-cover rounded-full grayscale group-hover:grayscale-0 transition-all">
-                        <span class="text-[10px] uppercase tracking-widest text-white">${member.name}</span>
-                    </td>
-                    <td class="py-4 text-[9px] text-white/40 uppercase tracking-widest">${member.role}</td>
-                    <td class="py-4 text-right space-x-2">
-                        <button onclick="editCrewMember('${memberId}')" 
-                            class="text-[8px] text-blue-500/50 hover:text-blue-500 uppercase tracking-widest transition">
-                            [ Edit ]
-                        </button>
-                        <button onclick="deleteCrewMember('${memberId}')" 
-                            class="text-[8px] text-red-500/40 hover:text-red-500 uppercase tracking-widest transition">
-                            [ Remove ]
-                        </button>
-                    </td>
-                </tr>
-            `;
+    <tr class="group border-b border-white/5 hover:bg-white/[0.02]">
+        <td class="py-4 flex items-center gap-3">
+            <img src="${img}" class="w-10 h-10 object-cover rounded-full">
+            <span class="text-[10px] text-white">${m.name}</span>
+        </td>
+        <td class="py-4 text-[9px] text-white/40 ">${m.role}${badge}</td>
+        <td class="py-4 text-[9px] text-white/40">${m.idCode || '-'}</td>
+        <td class="py-4 text-[9px] text-white/40">${m.email || '-'}</td>
+        <td class="py-4 text-right space-x-2 pr-6">
+            <button onclick="editCrewMember('${docSnap.id}')" class="text-[8px] text-blue-500">[ EDIT ]</button>
+            <button onclick="deleteCrewMember('${docSnap.id}')" class="text-[8px] text-red-500">[ REMOVE ]</button>
+        </td>
+    </tr>`;
         });
     });
 }
 
-// 2. REDAKTƏ FUNKSİYASI (Məlumatları inputlara doldurur)
 window.editCrewMember = async (id) => {
-    try {
-        const { getDoc, doc: docRef } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-        const docSnap = await getDoc(docRef(db, "crew", id));
+    const docSnap = await getDoc(doc(db, "crew", id));
+    if (docSnap.exists()) {
+        const d = docSnap.data();
+        document.getElementById('crew-name').value = d.name;
+        document.getElementById('crew-role').value = d.role;
+        document.getElementById('crew-id').value = d.idCode || '';
+        document.getElementById('crew-email').value = d.email || '';
 
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            document.getElementById('crew-name').value = data.name;
-            document.getElementById('crew-role').value = data.role;
-            
-            editCrewId = id; // Redaktə rejiminə keçdik
-            if (crewSubmitBtn) crewSubmitBtn.innerText = "UPDATE CREW MEMBER";
-            if (crewForm) crewForm.scrollIntoView({ behavior: 'smooth' });
+        // Yenilik: Bazadakı accessLevel-i dropdown-da seçirik
+        if (document.getElementById('crew-access-level')) {
+            document.getElementById('crew-access-level').value = d.accessLevel || 'user';
         }
-    } catch (err) {
-        console.error("Məlumat gətirilərkən xəta:", err);
+
+        editCrewId = id;
+        crewSubmitBtn.innerText = "UPDATE CREW";
+        crewForm.scrollIntoView({ behavior: 'smooth' });
     }
 };
 
-// 3. Crew Əlavə Etmə və ya Yeniləmə
-if (crewForm) {
-    crewForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
+crewForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    // 1. Şəkil Məntiqi: Default şəkli təyin et
+    const fileInput = document.getElementById('crew-img-file');
+    const file = fileInput?.files[0];
+    let imageUrl = "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png"; 
+
+    if (file) {
+        const formData = new FormData();
+        formData.append('image', file);
         
-        const nameInput = document.getElementById('crew-name');
-        const roleInput = document.getElementById('crew-role');
-        const fileInput = document.getElementById('crew-img-file');
-        const file = fileInput.files[0];
-        
-        const { updateDoc, addDoc, doc: fireDoc, collection: fireColl } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-
         try {
-            if (crewSubmitBtn) {
-                crewSubmitBtn.innerText = "SAVING...";
-                crewSubmitBtn.disabled = true;
-            }
-
-            let imageUrl = null;
-
-            // Şəkil yükləmə məntiqi: Yalnız şəkil seçilibsə ImgBB-yə göndər
-            if (file) {
-                const formData = new FormData();
-                formData.append('image', file);
-                const resp = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
-                    method: 'POST',
-                    body: formData
-                });
-                const imgData = await resp.json();
-                if (imgData.success) imageUrl = imgData.data.url;
-            }
-
-            // --- REDAKTƏ (UPDATE) REJİMİ ---
-            if (editCrewId) {
-                const updateData = {
-                    name: nameInput.value.trim(),
-                    role: roleInput.value.trim(),
-                    updatedAt: serverTimestamp()
-                };
-                
-                // Əgər yeni şəkil YÜKLƏNİBSƏ, onu da obyektə əlavə et
-                // Yüklənməyibsə, bazadakı köhnə şəkil olduğu kimi qalacaq
-                if (imageUrl) {
-                    updateData.image = imageUrl;
-                }
-
-                await updateDoc(fireDoc(db, "crew", editCrewId), updateData);
-                alert("Məlumatlar uğurla yeniləndi!");
-                
-                // Formu sıfırla və rejimdən çıx
-                editCrewId = null;
-                if (crewSubmitBtn) crewSubmitBtn.innerText = "Add to Crew";
-            } 
-            // --- YENİ ƏLAVƏ (ADD) REJİMİ ---
-            else {
-                // Eyni adda üzvün olub-olmadığını yoxlayırıq (Unikal olması üçün)
-                const qCheck = query(fireColl(db, "crew"), where("name", "==", nameInput.value.trim()));
-                const querySnapshot = await getDocs(qCheck);
-
-                if (!querySnapshot.empty) {
-                    alert("Bu adda üzv artıq mövcuddur!");
-                    if (crewSubmitBtn) {
-                        crewSubmitBtn.innerText = "Add to Crew";
-                        crewSubmitBtn.disabled = false;
-                    }
-                    return;
-                }
-
-                if (!imageUrl) {
-                    imageUrl = "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png"; 
-                }
-
-                await addDoc(fireColl(db, "crew"), {
-                    name: nameInput.value.trim(),
-                    role: roleInput.value.trim(),
-                    image: imageUrl,
-                    createdAt: serverTimestamp()
-                });
-                alert("Yeni Crew üzvü əlavə edildi!");
-            }
-
-            crewForm.reset();
-        } catch (err) {
-            console.error("Xəta baş verdi:", err);
-            alert("Xəta baş verdi, konsola baxın.");
-        } finally {
-            if (crewSubmitBtn) {
-                crewSubmitBtn.disabled = false;
-                if (!editCrewId) crewSubmitBtn.innerText = "Add to Crew";
-            }
-        }
-    });
-}
-
-// 4. Crew Silmə Funksiyası
-window.deleteCrewMember = async (id) => {
-    if(confirm("Bu Crew üzvünü silmək istədiyinizə əminsiniz?")) {
-        try {
-            const { deleteDoc, doc: docRef } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-            await deleteDoc(docRef(db, "crew", id));
-            
-            // Əgər silinən üzv hal-hazırda redaktə olunurdusa, rejimi sıfırla
-            if (editCrewId === id) {
-                editCrewId = null;
-                if (crewSubmitBtn) crewSubmitBtn.innerText = "Add to Crew";
-                if (crewForm) crewForm.reset();
+            const resp = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { 
+                method: 'POST', 
+                body: formData 
+            });
+            const imgData = await resp.json();
+            if (imgData.success) {
+                imageUrl = imgData.data.url;
             }
         } catch (error) {
-            console.error(error);
+            console.error("Crew şəkli yüklənə bilmədi, default şəkil saxlanıldı:", error);
+        }
+    }
+
+    // 2. Form məlumatlarını al
+    const name = document.getElementById('crew-name').value;
+    const role = document.getElementById('crew-role').value;
+    const idCode = document.getElementById('crew-id').value;
+    const email = document.getElementById('crew-email').value;
+    const password = document.getElementById('crew-password').value;
+    const accessLevel = document.getElementById('crew-access-level')?.value || 'user';
+
+    try {
+        if (editCrewId) {
+            // Məlumat yeniləmə: image sahəsini birbaşa imageUrl ilə yeniləyirik
+            const data = { name, role, idCode, email, accessLevel, image: imageUrl, updatedAt: serverTimestamp() };
+            await updateDoc(doc(db, "crew", editCrewId), data);
+
+            editCrewId = null;
+            crewSubmitBtn.innerText = "Add Crew";
+            alert("Məlumatlar uğurla yeniləndi!");
+        } else {
+            // Yeni istifadəçi yaratma
+            if (!password) return alert("Yeni crew üzvü üçün şifrə daxil edin!");
+
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const uid = userCredential.user.uid;
+
+            // Bazaya yazılacaq obyekt
+            const data = {
+                name, role, idCode, email, accessLevel,
+                image: imageUrl, // Hər zaman dolu olacaq (yüklənən və ya default)
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp()
+            };
+            
+            await setDoc(doc(db, "crew", uid), data);
+            alert("Crew üzvü uğurla əlavə olundu!");
+        }
+        
+        crewForm.reset();
+        // Əgər siyahını yeniləyən funksiyan varsa, onu buraya əlavə et:
+        if (typeof renderCrewList === 'function') renderCrewList();
+        
+    } catch (error) {
+        console.error("Xəta:", error);
+        alert("Xəta: " + error.message);
+    }
+});
+
+window.deleteCrewMember = async (id) => {
+    if (confirm("Bu işçini silmək istəyirsiniz?")) {
+        try {
+            // Firestore-dan silirik
+            await deleteDoc(doc(db, "crew", id));
+            alert("İşçi bazadan silindi. QEYD: İstifadəçinin giriş icazəsini (Auth) Firebase konsolundan da əllə silməyi unutmayın.");
+        } catch (error) {
+            alert("Silinmə xətası: " + error.message);
         }
     }
 };
 /* ----------------- The CREW END ------------------*/
+
+
 /* ----------------- The STAFF START ------------------*/
 const staffForm = document.getElementById('add-staff-form');
 const staffTable = document.getElementById('staff-table-body');
 const staffSubmitBtn = document.getElementById('staff-submit-btn');
-let editStaffId = null; // BU VACİBDİR: Redaktə rejimində olduğumuzu yadda saxlayır
+let editStaffId = null;
 
-// 1. Real-time Staff Siyahısı
 function initStaffList() {
     if (!staffTable) return;
-    const qStaff = query(collection(db, "staff"), orderBy("createdAt", "desc"));
-    
-    onSnapshot(qStaff, (snapshot) => {
+    onSnapshot(query(collection(db, "staff"), orderBy("createdAt", "desc")), (snapshot) => {
         staffTable.innerHTML = "";
         snapshot.forEach((docSnap) => {
-            const member = docSnap.data();
-            const memberId = docSnap.id; 
-            
+            const m = docSnap.data();
+            const img = m.image || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png';
+
+            // Cədvəldə rol hissəsinin yanında admin/user statusunu da kiçik qeyd edirik
+            const badge = m.accessLevel === 'admin' ? ' <span class="text-blue-400 text-[8px]">[ADMIN]</span>' : '';
+
             staffTable.innerHTML += `
                 <tr class="group border-b border-white/5 hover:bg-white/[0.02]">
                     <td class="py-4 flex items-center gap-3">
-                        <img src="${member.image}" class="w-10 h-10 object-cover rounded-full grayscale group-hover:grayscale-0 transition-all">
-                        <span class="text-[10px] uppercase tracking-widest text-white">${member.name}</span>
+                        <img src="${img}" class="w-10 h-10 object-cover rounded-full">
+                        <span class="text-[10px] text-white">${m.name}</span>
                     </td>
-                    <td class="py-4 text-[9px] text-white/40 uppercase tracking-widest">${member.role}</td>
-                    <td class="py-4 text-right space-x-2">
-                        <button onclick="editStaffMember('${memberId}')" 
-                            class="text-[8px] text-blue-500/50 hover:text-blue-500 uppercase tracking-widest transition">
-                            [ Edit ]
-                        </button>
-                        <button onclick="deleteStaffMember('${memberId}')" 
-                            class="text-[8px] text-red-500/40 hover:text-red-500 uppercase tracking-widest transition">
-                            [ Remove ]
-                        </button>
+                    <td class="py-4 text-[9px] text-white/40 ">${m.role}${badge}</td>
+                    <td class="py-4 text-[9px] text-white/40">${m.idCode || '-'}</td>
+                    <td class="py-4 text-[9px] text-white/40">${m.email || '-'}</td>
+                    <td class="py-4 text-right space-x-2 pr-6">
+                        <button onclick="editStaffMember('${docSnap.id}')" class="text-[8px] text-blue-500">[ EDIT ]</button>
+                        <button onclick="deleteStaffMember('${docSnap.id}')" class="text-[8px] text-red-500">[ REMOVE ]</button>
                     </td>
-                </tr>
-            `;
+                </tr>`;
         });
     });
 }
 
-// 2. REDAKTƏ FUNKSİYASI (Məlumatları inputlara doldurur)
 window.editStaffMember = async (id) => {
-    try {
-        const { getDoc, doc: docRef } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-        const docSnap = await getDoc(docRef(db, "staff", id));
+    const docSnap = await getDoc(doc(db, "staff", id));
+    if (docSnap.exists()) {
+        const d = docSnap.data();
+        document.getElementById('staff-name').value = d.name;
+        document.getElementById('staff-role').value = d.role;
+        document.getElementById('staff-id').value = d.idCode || '';
+        document.getElementById('staff-email').value = d.email || '';
 
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            document.getElementById('staff-name').value = data.name;
-            document.getElementById('staff-role').value = data.role;
-            
-            editStaffId = id; // Redaktə rejiminə keçdik
-            staffSubmitBtn.innerText = "UPDATE STAFF MEMBER";
-            staffForm.scrollIntoView({ behavior: 'smooth' });
+        // Yenilik: Bazadakı accessLevel-i dropdown-da seçirik
+        if (document.getElementById('staff-access-level')) {
+            document.getElementById('staff-access-level').value = d.accessLevel || 'user';
         }
-    } catch (err) {
-        console.error("Məlumat gətirilərkən xəta:", err);
+
+        editStaffId = id;
+        staffSubmitBtn.innerText = "UPDATE STAFF";
+        staffForm.scrollIntoView({ behavior: 'smooth' });
     }
 };
 
-// 3. Staff Əlavə Etmə və ya Yeniləmə
-if (staffForm) {
-    staffForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
+staffForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    // 1. Şəkil Məntiqi: Əvvəlcə default şəkli təyin edirik
+    const fileInput = document.getElementById('staff-img-file');
+    const file = fileInput?.files[0];
+    let imageUrl = "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png"; 
+
+    // Əgər istifadəçi şəkil seçibsə, ImgBB-yə yüklə
+    if (file) {
+        const formData = new FormData();
+        formData.append('image', file);
         
-        const nameInput = document.getElementById('staff-name');
-        const roleInput = document.getElementById('staff-role');
-        const fileInput = document.getElementById('staff-img-file');
-        const file = fileInput.files[0];
-        
-        const { updateDoc, addDoc, doc: fireDoc, collection: fireColl } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-
         try {
-            staffSubmitBtn.innerText = "SAVING...";
-            staffSubmitBtn.disabled = true;
-
-            let imageUrl = null;
-
-            // 1. Şəkil yükləmə məntiqi: Yalnız şəkil seçilibsə ImgBB-yə göndər
-            if (file) {
-                const formData = new FormData();
-                formData.append('image', file);
-                const resp = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
-                    method: 'POST',
-                    body: formData
-                });
-                const imgData = await resp.json();
-                if (imgData.success) imageUrl = imgData.data.url;
+            const resp = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { 
+                method: 'POST', 
+                body: formData 
+            });
+            const imgData = await resp.json();
+            if (imgData.success) {
+                imageUrl = imgData.data.url; // Şəkil uğurla yüklənərsə, linki yenilə
             }
-
-            // 2. Redaktə (UPDATE) Rejimi
-            if (editStaffId) {
-                const updateData = {
-                    name: nameInput.value.trim(),
-                    role: roleInput.value.trim(),
-                    updatedAt: serverTimestamp()
-                };
-                
-                // Əgər yeni şəkil YÜKLƏNİBSƏ, onu da update obyektinə əlavə et
-                // Yüklənməyibsə, bazadakı köhnə şəkil olduğu kimi qalacaq
-                if (imageUrl) {
-                    updateData.image = imageUrl;
-                }
-
-                await updateDoc(fireDoc(db, "staff", editStaffId), updateData);
-                alert("Məlumatlar uğurla yeniləndi!");
-                
-                // Formu sıfırla və rejimdən çıx
-                editStaffId = null;
-                staffSubmitBtn.innerText = "Add to Staff";
-            } 
-            // 3. Yeni Əlavə (ADD) Rejimi
-            else {
-                // Yeni işçi üçün şəkil mütləqdir
-                if (!imageUrl) {
-                    imageUrl = "https://cdn-icons-png.flaticon.com/512/149/149071.png"; 
-                    // İstəsən yuxarıdakı linki istənilən minimalist bir boş profil şəkli linki ilə əvəzləyə bilərsən
-                }
-                // if (!imageUrl) {
-                //     alert("Yeni işçi üçün şəkil mütləqdir!");
-                //     staffSubmitBtn.disabled = false;
-                //     staffSubmitBtn.innerText = "Add to Staff";
-                //     return;
-                // }
-
-                await addDoc(fireColl(db, "staff"), {
-                    name: nameInput.value.trim(),
-                    role: roleInput.value.trim(),
-                    image: imageUrl,
-                    createdAt: serverTimestamp()
-                });
-                alert("Yeni işçi əlavə edildi!");
-            }
-
-            staffForm.reset();
-        } catch (err) {
-            console.error("Xəta baş verdi:", err);
-            alert("Xəta baş verdi, konsola baxın.");
-        } finally {
-            staffSubmitBtn.disabled = false;
-        }
-    });
-}
-
-// 4. Staff Silmə Funksiyası
-window.deleteStaffMember = async (id) => {
-    if(confirm("Bu işçini silmək istədiyinizə əminsiniz?")) {
-        try {
-            const { deleteDoc, doc: docRef } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-            await deleteDoc(docRef(db, "staff", id));
         } catch (error) {
-            console.error(error);
+            console.error("Şəkil yüklənə bilmədi, default şəkil saxlanıldı:", error);
+        }
+    }
+
+    // 2. Form məlumatlarını al
+    const name = document.getElementById('staff-name').value;
+    const role = document.getElementById('staff-role').value;
+    const idCode = document.getElementById('staff-id').value;
+    const email = document.getElementById('staff-email').value;
+    const password = document.getElementById('staff-password').value;
+    const accessLevel = document.getElementById('staff-access-level')?.value || 'user';
+
+    try {
+        if (editStaffId) {
+            // Məlumat yeniləmə
+            const data = { name, role, idCode, email, accessLevel, image: imageUrl, updatedAt: serverTimestamp() };
+            await updateDoc(doc(db, "staff", editStaffId), data);
+            
+            editStaffId = null;
+            staffSubmitBtn.innerText = "Add Staff";
+            alert("Staff məlumatları uğurla yeniləndi!");
+        } else {
+            // Yeni istifadəçi yaratma
+            if (!password) return alert("Yeni staff üçün şifrə tələb olunur!");
+
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const uid = userCredential.user.uid;
+
+            // Şəkil linki artıq 'imageUrl' dəyişənindədir (yüklənən və ya default)
+            const data = {
+                name, role, idCode, email, accessLevel,
+                image: imageUrl, 
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp()
+            };
+            
+            await setDoc(doc(db, "staff", uid), data);
+            alert("Staff üzvü uğurla əlavə olundu!");
+        }
+        
+        staffForm.reset();
+        if (typeof renderStaffList === 'function') renderStaffList();
+    } catch (error) {
+        console.error("Firebase xətası:", error);
+        alert("Xəta baş verdi: " + error.message);
+    }
+});
+// Silinmə funksiyası
+window.deleteStaffMember = async (id) => {
+    if (confirm("Bu staff üzvünü silmək istəyirsiniz?")) {
+        try {
+            await deleteDoc(doc(db, "staff", id));
+            alert("Staff bazadan silindi. QEYD: İstifadəçinin giriş icazəsini (Auth) Firebase konsolundan da əllə silməyi unutmayın.");
+        } catch (error) {
+            alert("Silinmə xətası: " + error.message);
         }
     }
 };
 /* ----------------- The STAFF END ------------------*/
-
-
-// ========================================================
-// 🛡️ ADMIN.JS - GLOBAL FIRESTORE MOMENTS APP/REJ SYSTEM
-// ========================================================
-// ⚠️ TƏKRAR IMPORTLAR VƏ INITIALIZEAPP BURADAN SİLİNDİ! 
-// ⚠️ SİSTEM ARTIQ FAZLANIN ƏN YUXARISINDAKI 'db' INSTANSIYASI İLƏ İŞLƏYİR.
-
+/* ========================================================
+// 🛡️ MOMENTS APP/REJ SYSTEM
+// ======================================================== */
 document.addEventListener("DOMContentLoaded", () => {
-    // Cari olaraq hansı tabda olduğumuzu izləmək üçün ("pending" və ya "approved")
     let currentTab = "pending";
 
-    // Tab elementlərini tapırıq
     const tabPendingBtn = document.getElementById("tabPendingBtn");
     const tabLiveBtn = document.getElementById("tabLiveBtn");
 
-    // Səhifə yüklənəndə ilk görünüşü render edirik
     renderAdminMoments();
 
-    // TAB KLİK MEXANİZMLƏRİ
     if (tabPendingBtn && tabLiveBtn) {
         tabPendingBtn.addEventListener("click", () => {
             currentTab = "pending";
-            // Vizual olaraq aktiv tabı rəngləmək
             tabPendingBtn.className = "border border-white bg-white text-black text-[9px] font-bold tracking-widest px-4 py-2 uppercase transition cursor-pointer";
             tabLiveBtn.className = "border border-white/10 bg-transparent text-white/40 text-[9px] font-bold tracking-widest px-4 py-2 uppercase transition hover:border-white/20 cursor-pointer";
             renderAdminMoments();
         });
 
         tabLiveBtn.addEventListener("click", () => {
-            currentTab = "approved"; // Qlobal bazada canlı videolar "approved" adlanır
-            // Vizual olaraq aktiv tabı rəngləmək
+            currentTab = "approved";
             tabLiveBtn.className = "border border-white bg-white text-black text-[9px] font-bold tracking-widest px-4 py-2 uppercase transition cursor-pointer";
             tabPendingBtn.className = "border border-white/10 bg-transparent text-white/40 text-[9px] font-bold tracking-widest px-4 py-2 uppercase transition hover:border-white/20 cursor-pointer";
             renderAdminMoments();
         });
     }
 
-    // ƏSAS RENDER FUNKSİYASI (FIRESTORE-DAN REAL DATA ÇƏKİR)
     async function renderAdminMoments() {
         const listContainer = document.getElementById("adminMomentsList");
         const pendingCountEl = document.getElementById("pendingCount");
         const liveCountEl = document.getElementById("liveCount");
-        
+
         if (!listContainer) return;
 
         listContainer.innerHTML = `
@@ -505,10 +454,9 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
 
         try {
-            // 1. Sayğaclar üçün bütün videoları çəkirik (Statusuna görə filterləmək üçün)
             const allMomentsQuery = query(collection(db, "approved_moments"), orderBy("createdAt", "desc"));
             const allSnapshot = await getDocs(allMomentsQuery);
-            
+
             let pendingCount = 0;
             let approvedCount = 0;
             let activeList = [];
@@ -517,8 +465,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const data = docSnap.data();
                 const item = { id: docSnap.id, ...data };
 
-                // Status sayğacı
-                if (data.status === "approved" || !data.status) { 
+                if (data.status === "approved" || !data.status) {
                     approvedCount++;
                     if (currentTab === "approved") activeList.push(item);
                 } else if (data.status === "pending") {
@@ -527,11 +474,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             });
 
-            // Sayğacları ekranda yeniləyirik
             if (pendingCountEl) pendingCountEl.textContent = pendingCount;
             if (liveCountEl) liveCountEl.textContent = approvedCount;
 
-            // Əgər aktiv siyahı boşdursa
             if (activeList.length === 0) {
                 listContainer.innerHTML = `
                     <div class="col-span-full py-12 text-center text-white/20 text-[9px] tracking-widest uppercase font-light">
@@ -541,12 +486,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            // Konteyneri təmizləyib videoları düzürük
             listContainer.innerHTML = "";
-            
+
             activeList.forEach((video) => {
                 let actionButtonsHTML = "";
-                
+
                 if (currentTab === "pending") {
                     actionButtonsHTML = `
                         <button data-id="${video.id}" class="approve-btn-trigger bg-white text-black text-[9px] font-bold tracking-widest py-3 uppercase transition hover:bg-zinc-200 cursor-pointer">
@@ -569,12 +513,10 @@ document.addEventListener("DOMContentLoaded", () => {
                         <div class="relative aspect-[9/16] w-full max-h-[260px] bg-black/50 rounded-sm overflow-hidden border border-white/5">
                             <video src="${video.url}" class="w-full h-full object-cover" controls muted></video>
                         </div>
-                        
                         <div class="flex flex-col gap-1">
                             <span class="text-[8px] text-white/30 tracking-widest uppercase">Caption</span>
                             <p class="text-[10px] text-white/80 font-light tracking-wide leading-relaxed uppercase">${video.caption}</p>
                         </div>
-                        
                         <div class="grid grid-cols-2 gap-3 pt-2 border-t border-white/5">
                             ${actionButtonsHTML}
                         </div>
@@ -583,7 +525,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 listContainer.insertAdjacentHTML("beforeend", cardHTML);
             });
 
-            // Düymələrə klik hadisələrini təyin edirik
             initActionListeners();
 
         } catch (error) {
@@ -592,9 +533,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // DÜYMƏLƏRİN DİNAMİK İŞƏ SALINMASI
     function initActionListeners() {
-        // Təsdiqləmə (Approve)
         document.querySelectorAll(".approve-btn-trigger").forEach(btn => {
             btn.addEventListener("click", async (e) => {
                 const docId = e.target.getAttribute("data-id");
@@ -604,7 +543,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 try {
                     const docRef = doc(db, "approved_moments", docId);
                     await updateDoc(docRef, { status: "approved" });
-                    
                     alert("Moments video approved and added to the live feed! 🎉");
                     renderAdminMoments();
                 } catch (err) {
@@ -614,7 +552,6 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         });
 
-        // Rədd etmə (Reject)
         document.querySelectorAll(".reject-btn-trigger").forEach(btn => {
             btn.addEventListener("click", async (e) => {
                 const docId = e.target.getAttribute("data-id");
@@ -633,11 +570,10 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         });
 
-        // Canlıdan Silmə (Remove Live)
         document.querySelectorAll(".remove-btn-trigger").forEach(btn => {
             btn.addEventListener("click", async (e) => {
                 const docId = e.target.getAttribute("data-id");
-                if (confirm("🚨 Diqqət! Bu video Moments platformasından (canlı yayından) tamamilə silinəcək. Əminsiniz?")) {
+                if (confirm("🚨 Diqqət! Bu video Moments platformasından tamamilə silinəcək. Əminsiniz?")) {
                     e.target.textContent = "REMOVING...";
                     e.target.disabled = true;
 
@@ -654,8 +590,11 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 });
-// Logout
+
+/* ----------------- Logout və Back Məntiqi ------------------*/
 const logoutBtn = document.getElementById('logout-btn');
+const backBtn = document.getElementById('back-btn');
+
 if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
         signOut(auth).then(() => {
@@ -663,5 +602,11 @@ if (logoutBtn) {
         }).catch((error) => {
             console.error("Logout xətası:", error);
         });
+    });
+}
+
+if (backBtn) {
+    backBtn.addEventListener('click', () => {
+        window.location.href = "index.htm";
     });
 }

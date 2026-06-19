@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
-    <title>GNC | Manager Access</title>
+    <title>GNC | Gateway Access</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=Inter:wght@100;300;900&display=swap');
 
@@ -66,7 +66,7 @@
 
         <div class="absolute top-8 left-8 md:top-12 md:left-20 flex flex-col gap-1">
             <h1 class="font-sync text-xl md:text-2xl font-bold tracking-tighter">GNC.</h1>
-            <span class="text-[7px] md:text-[9px] uppercase tracking-[0.5em] text-white/20">6615-GENCLIK</span>
+            <span class="text-[7px] md:text-[9px]  tracking-[0.5em] text-white/20">6615-GENCLIK</span>
         </div>
 
         <div
@@ -75,40 +75,81 @@
             <div class="hidden md:flex flex-col justify-between p-10 lg:p-16 border-r border-white/10 bg-black/20">
                 <div class="space-y-4">
                     <span class="text-[9px] uppercase tracking-[0.8em] text-white/30">Portal Status: Secure</span>
-                    <h2 class="text-5xl lg:text-7xl font-black uppercase tracking-tighter leading-none">
-                        Manager <br> <span class="text-stroke italic font-fashion lowercase font-light">Vault</span>
-                        <br> Access
+                    <h2 class="text-5xl lg:text-7xl font-black uppercase tracking-tighter leading-none"
+                        id="left-panel-title">
+                        SYSTEM <br> <span class="text-stroke italic font-fashion lowercase font-light">vault</span>
+                        <br> ACCESS
                     </h2>
                 </div>
 
                 <div class="space-y-6">
-                    <p class="text-[10px] text-white/50 leading-relaxed uppercase tracking-widest max-w-[250px]">
-                        Rəqəmsal idarəetmə panelinə daxil olmaq üçün menecer məlumatlarını daxil edin.
+                    <p id="left-panel-desc"
+                        class="text-[10px] text-white/50 leading-relaxed uppercase tracking-widest max-w-[250px]">
+                        Rəqəmsal idarəetmə və daxili sosial şəbəkə şəbəkəsinə keçid etmək üçün müvafiq giriş növünü
+                        seçin.
                     </p>
                     <div class="flex items-center gap-3">
-                        <div class="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse"></div>
-                        <span class="text-[8px] uppercase tracking-widest text-white/30 font-mono">Restricted
-                            Area</span>
+                        <div class="w-1.5 h-1.5 rounded-full bg-zinc-500 animate-pulse" id="status-pulse"></div>
+                        <span class="text-[8px] uppercase tracking-widest text-white/30 font-mono"
+                            id="status-text">GATEWAY AREA</span>
                     </div>
                 </div>
             </div>
 
-            <div class="p-8 sm:p-12 md:p-16 lg:p-20 flex flex-col justify-center bg-black/60 md:bg-black/40">
-                <div id="login-box" class="space-y-10 md:space-y-12">
+            <div class="p-8 sm:p-12 md:p-16 lg:p-20 flex flex-col justify-center bg-black/60 md:bg-black/40 relative">
+
+                <div id="selection-box" class="space-y-10 md:space-y-12 transition-all duration-300">
                     <div class="space-y-2 text-center md:text-left">
-                        <h3 class="font-sync text-2xl md:text-3xl font-bold tracking-tighter">IDENTIFY</h3>
-                        <p class="text-[9px] md:text-[10px] uppercase tracking-[0.4em] text-white/40">Credentials
+                        <h3 class="font-sync text-2xl md:text-3xl font-bold tracking-tighter">SELECT TYPE</h3>
+                        <p class="text-[9px] md:text-[10px] uppercase tracking-[0.4em] text-white/40">Giriş növünü
+                            müəyyən edin</p>
+                    </div>
+
+                    <div class="space-y-4 pt-4">
+                        <button id="select-admin-btn"
+                            class="group relative w-full overflow-hidden border border-white/10 py-4 text-[10px] uppercase tracking-[0.5em] transition-all hover:border-white">
+                            <span class="relative z-10 transition-colors duration-500 group-hover:text-black">MANAGER /
+                                ADMIN</span>
+                            <div
+                                class="absolute inset-0 bg-white translate-y-full group-hover:translate-y-0 transition-transform duration-500">
+                            </div>
+                        </button>
+
+                        <button id="select-staff-btn"
+                            class="group relative w-full overflow-hidden border border-white/10 py-4 text-[10px] uppercase tracking-[0.5em] transition-all hover:border-white">
+                            <span class="relative z-10 transition-colors duration-500 group-hover:text-black">STAFF /
+                                MEMBER</span>
+                            <div
+                                class="absolute inset-0 bg-white translate-y-full group-hover:translate-y-0 transition-transform duration-500">
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="form-box" class="hidden space-y-8 md:space-y-10 transition-all duration-300">
+
+                    <button id="back-to-selection"
+                        class="text-[8px] uppercase tracking-[0.4em] text-white/40 hover:text-white transition flex items-center gap-2 absolute top-6 right-8">
+                        ← SEÇİMƏ QAYIT
+                    </button>
+
+                    <div class="space-y-2 text-center md:text-left pt-4">
+                        <h3 id="form-box-title" class="font-sync text-2xl md:text-3xl font-bold tracking-tighter">
+                            IDENTIFY</h3>
+                        <p id="form-box-subtitle"
+                            class="text-[9px] md:text-[10px] uppercase tracking-[0.4em] text-white/40">Credentials
                             required</p>
                     </div>
 
                     <form id="login-form" class="space-y-6 md:space-y-8">
-                        <input type="email" id="login-email" placeholder="MANAGER EMAIL" required
-                            class="w-full bg-transparent border-b border-white/10 py-4 text-[10px] md:text-[11px] tracking-[0.3em] outline-none focus:border-white transition-all  placeholder:text-white/20">
+
+                        <input type="email" id="login-email" placeholder="EMAIL ADDRESS" required autocomplete="off"
+                            class="w-full bg-transparent border-b border-white/10 py-4 text-[10px] md:text-[11px] tracking-[0.3em] outline-none focus:border-white transition-all placeholder:text-white/20">
 
                         <input type="password" id="login-password" placeholder="PASSWORD" required
-                            class="w-full bg-transparent border-b border-white/10 py-4 text-[10px] md:text-[11px] tracking-[0.3em] outline-none focus:border-white transition-all  placeholder:text-white/20">
+                            class="w-full bg-transparent border-b border-white/10 py-4 text-[10px] md:text-[11px] tracking-[0.3em] outline-none focus:border-white transition-all placeholder:text-white/20">
 
-                        <button type="submit"
+                        <button type="submit" id="submit-auth-btn"
                             class="group relative w-full overflow-hidden border border-white/20 py-4 md:py-5 text-[9px] md:text-[10px] uppercase tracking-[0.6em] transition-all hover:border-white active:scale-[0.98]">
                             <span class="relative z-10 transition-colors duration-500 group-hover:text-black">Verify &
                                 Enter</span>
@@ -118,12 +159,14 @@
                         </button>
                     </form>
 
-                    <div class="text-center">
+                    <div id="forgot-password-wrapper" class="text-center">
                         <button id="open-reset"
-                            class="text-[8px] uppercase tracking-[0.3em] text-white/20 hover:text-white transition-all">Forgot
-                            password?</button>
+                            class="text-[8px] uppercase tracking-[0.3em] text-white/20 hover:text-white transition-all">
+                            Forgot password?
+                        </button>
                     </div>
                 </div>
+
             </div>
         </div>
 
@@ -144,7 +187,7 @@
                 <p class="text-[9px] uppercase tracking-[0.4em] text-white/40">Enter manager email for link</p>
             </div>
             <input type="email" id="reset-email-input" placeholder="EMAIL ADDRESS"
-                class="w-full bg-transparent border-b border-white/10 py-4 text-[10px] tracking-[0.3em] outline-none focus:border-white transition-all uppercase">
+                class="w-full bg-transparent border-b border-white/10 py-4 text-[10px] tracking-[0.3em] outline-none focus:border-white transition-all">
             <button id="send-reset-btn"
                 class="w-full border border-white/20 py-4 text-[9px] uppercase tracking-[0.5em] hover:bg-white hover:text-black transition-all">
                 Send Reset Link
@@ -152,6 +195,76 @@
         </div>
     </div>
 
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const selectionBox = document.getElementById("selection-box");
+            const formBox = document.getElementById("form-box");
+
+            const selectAdminBtn = document.getElementById("select-admin-btn");
+            const selectStaffBtn = document.getElementById("select-staff-btn");
+            const backBtn = document.getElementById("back-to-selection");
+
+            const formTitle = document.getElementById("form-box-title");
+            const formSubtitle = document.getElementById("form-box-subtitle");
+            const emailInput = document.getElementById("login-email");
+            const forgotWrapper = document.getElementById("forgot-password-wrapper");
+
+            const leftTitle = document.getElementById("left-panel-title");
+            const leftDesc = document.getElementById("left-panel-desc");
+            const statusPulse = document.getElementById("status-pulse");
+            const statusText = document.getElementById("status-text");
+
+            window.currentAuthRole = null;
+
+            // MANAGER / ADMIN Seçildikdə
+            selectAdminBtn.addEventListener("click", () => {
+                window.currentAuthRole = "admin";
+
+                formTitle.textContent = "MANAGER ACCESS";
+                formSubtitle.textContent = "Admin credentials required";
+                emailInput.placeholder = "MANAGER EMAIL";
+                forgotWrapper.classList.remove("hidden"); // 🔑 Görünür
+
+                leftTitle.innerHTML = `Manager <br> <span class="text-stroke italic font-fashion lowercase font-light">vault</span> <br> Access`;
+                leftDesc.textContent = "Rəqəmsal idarəetmə panelinə daxil olmaq üçün menecer məlumatlarını daxil edin.";
+                statusPulse.className = "w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse";
+                statusText.textContent = "RESTRICTED AREA";
+
+                selectionBox.classList.add("hidden");
+                formBox.classList.remove("hidden");
+            });
+
+            // STAFF / MEMBER Seçildikdə
+            selectStaffBtn.addEventListener("click", () => {
+                window.currentAuthRole = "staff";
+
+                formTitle.textContent = "STAFF PORTAL";
+                formSubtitle.textContent = "Employee access keys required";
+                emailInput.placeholder = "STAFF EMAIL";
+                forgotWrapper.classList.remove("hidden"); // 🔑 ARTIQ İŞÇİ ÜÇÜN DƏ GÖRÜNÜR!
+
+                leftTitle.innerHTML = `Staff <br> <span class="text-stroke italic font-fashion lowercase font-light">network</span> <br> Stream`;
+                leftDesc.textContent = "Zara daxili Moments platformasına qoşulmaq və profilinizi idarə etmək üçün işçi girişini tamamlayın.";
+                statusPulse.className = "w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse";
+                statusText.textContent = "STAFF AREA";
+
+                selectionBox.classList.add("hidden");
+                formBox.classList.remove("hidden");
+            });
+
+            // GERİ QAYITMAQ düyməsi
+            backBtn.addEventListener("click", () => {
+                window.currentAuthRole = null;
+                formBox.classList.add("hidden");
+                selectionBox.classList.remove("hidden");
+
+                leftTitle.innerHTML = `SYSTEM <br> <span class="text-stroke italic font-fashion lowercase font-light">vault</span> <br> ACCESS`;
+                leftDesc.textContent = "Rəqəmsal idarəetmə və daxili sosial şəbəkə şəbəkəsinə keçid etmək üçün müvafiq giriş növünü seçin.";
+                statusPulse.className = "w-1.5 h-1.5 rounded-full bg-zinc-500 animate-pulse";
+                statusText.textContent = "GATEWAY AREA";
+            });
+        });    
+    </script>
     <script type="module" src="./js/auth.js"></script>
 </body>
 

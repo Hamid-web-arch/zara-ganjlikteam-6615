@@ -1,104 +1,111 @@
-import { auth } from './firebase-config.js';
+import { auth, db } from './firebase-config.js';
 import { 
     signInWithEmailAndPassword, 
     sendPasswordResetEmail,
     onAuthStateChanged,
     setPersistence,
-    browserLocalPersistence
+    browserLocalPersistence,
+    signOut
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-console.log("✅ Manager Auth System Active");
+import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// --- SESSİYA YOXLANILMASI (AUTO-LOGIN) ---
-// Səhifə açılan kimi bu funksiya işə düşür
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        console.log("⚡ Aktiv sessiya tapıldı:", user.email);
-        // Əgər istifadəçi artıq daxil olubsa və login səhifəsindədirsə, birbaşa adminə göndər
-        if (window.location.pathname.includes("auth.htm")) {
-            window.location.href = "admin.htm";
+console.log("✅ Dual-Role Gateway System Active (Strict Path Routing)");
+
+onAuthStateChanged(auth, async (user) => {
+    // Əgər istifadəçi giriş edibsə və hələ də auth səhifəsindədirsə
+    if (user && window.location.pathname.includes("auth.htm")) {
+        try {
+            // 1. Bazadan məlumatı çək
+            const staffSnap = await getDoc(doc(db, "staff", user.uid));
+            const crewSnap = await getDoc(doc(db, "crew", user.uid));
+            
+            const userData = staffSnap.exists() ? staffSnap.data() : (crewSnap.exists() ? crewSnap.data() : null);
+            
+            if (!userData) {
+                await signOut(auth);
+                alert("İstifadəçi məlumatları tapılmadı.");
+                return;
+            }
+
+            const userAccessLevel = userData.accessLevel; // 'admin' və ya 'user'
+            const selectedRole = localStorage.getItem("user_role");
+
+            // 2. Yönləndirmə Məntiqi (DAHA ELASTİK)
+            if (userAccessLevel === "admin") {
+                // Admin həm admin panelə, həm də profilə girə bilər
+                window.location.href = selectedRole === "admin" ? "admin.htm" : "../staff-profile.htm";
+            } 
+            else if (userAccessLevel === "user") {
+                // User yalnız profilə girə bilər
+                if (selectedRole === "admin") {
+                    await signOut(auth);
+                    alert("Sizin admin panelinə giriş icazəniz yoxdur!");
+                } else {
+                    window.location.href = "../staff-profile.htm";
+                }
+            }
+        } catch (error) {
+            console.error("Auth Xətası:", error);
+            await signOut(auth);
         }
-    } else {
-        console.log("📡 Aktiv sessiya yoxdur.");
     }
 });
-
-// --- LOGIN LOGIC ---
+// --- 🔐 GİRİŞ MƏNTİQİ ---
 const loginForm = document.getElementById('login-form');
-
 if (loginForm) {
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
-        const email = document.getElementById('login-email').value;
+        const email = document.getElementById('login-email').value.trim();
         const password = document.getElementById('login-password').value;
+        const selectedRole = window.currentAuthRole; // Bu auth.htm-dəki seçimlə gəlir
+
+        if (!selectedRole) {
+            alert("Zəhmət olmasa giriş növünü seçin.");
+            return;
+        }
 
         try {
-            console.log("⏳ Verifying credentials...");
+            // ROLU YADDA SAXLA
+            localStorage.setItem("user_role", selectedRole);
             
-            // 1. Öncə sessiya növünü təyin edirik (Local = Brauzer yaddaşında qalsın)
             await setPersistence(auth, browserLocalPersistence);
-            
-            // 2. Sonra giriş edirik
-            const userCredential = await signInWithEmailAndPassword(auth, email, password);
-            
-            console.log("✅ Welcome, Manager:", userCredential.user.email);
-            window.location.href = "admin.htm"; 
-
+            await signInWithEmailAndPassword(auth, email, password);
+            // Yönləndirmə onAuthStateChanged tərəfindən həyata keçiriləcək
         } catch (error) {
-            console.error("❌ Access Denied:", error.code);
-            alert("SİSTEMƏ GİRİŞ RƏDD EDİLDİ: Email və ya şifrə yanlışdır.");
+            alert("Giriş rədd edildi: Məlumatlar yanlışdır.");
         }
     });
 }
-// --- RESET PASSWORD LOGIC ---
+
+// --- 🔑 ŞİFRƏ SIFIRLAMA ---
 const resetModal = document.getElementById('reset-modal');
 const openResetBtn = document.getElementById('open-reset');
 const closeResetBtn = document.getElementById('close-reset');
 const sendResetBtn = document.getElementById('send-reset-btn');
 const resetEmailInput = document.getElementById('reset-email-input');
 
-// Modalı aç
-if (openResetBtn) {
+if (openResetBtn && resetModal) {
     openResetBtn.addEventListener('click', (e) => {
         e.preventDefault();
         resetModal.classList.remove('hidden');
     });
 }
 
-// Modalı bağla
-if (closeResetBtn) {
-    closeResetBtn.addEventListener('click', () => {
-        resetModal.classList.add('hidden');
-    });
+if (closeResetBtn && resetModal) {
+    closeResetBtn.addEventListener('click', () => resetModal.classList.add('hidden'));
 }
 
-// Şifrə sıfırlama linki göndər
-if (sendResetBtn) {
+if (sendResetBtn && resetModal) {
     sendResetBtn.addEventListener('click', async () => {
-        const email = resetEmailInput.value;
-
-        if (!email) {
-            alert("Zəhmət olmasa email daxil edin.");
-            return;
-        }
-
+        const email = resetEmailInput.value.trim();
+        if (!email) return alert("Email daxil edin.");
         try {
-            console.log("⏳ Sending reset link...");
             await sendPasswordResetEmail(auth, email);
-            alert("Şifrə yeniləmə linki emailinizə göndərildi. Gələnlər və ya Spam qutusunu yoxlayın.");
+            alert("Link göndərildi.");
             resetModal.classList.add('hidden');
-            resetEmailInput.value = ""; // Inputu təmizlə
         } catch (error) {
-            console.error("❌ Reset Error:", error.code);
-            alert("Xəta: Email tapılmadı və ya sistem problemi.");
+            alert("Xəta: Email tapılmadı.");
         }
     });
 }
-
-// Modal kənarına klikləyəndə bağlanması üçün (opsional)
-window.addEventListener('click', (e) => {
-    if (e.target === resetModal) {
-        resetModal.classList.add('hidden');
-    }
-});

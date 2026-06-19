@@ -180,10 +180,71 @@ body {
     transform: translateY(-5px);
 }
 
+/* Scroll-bar-ın ümumi dizaynı */
+.max-h-\[300px\]::-webkit-scrollbar {
+    width: 6px; /* İncə scroll */
+}
+
+/* Scroll-bar-ın arxa fonu */
+.max-h-\[300px\]::-webkit-scrollbar-track {
+    background: #111; 
+}
+
+/* Scroll-bar-ın sürüşən hissəsi (rəngi ağın 20%-i) */
+.max-h-\[300px\]::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+}
+
+/* Scroll-bar-ın üzərinə gələndə rəng dəyişimi */
+.max-h-\[300px\]::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.4);
+}
+
 /* Mobil tənzimləmə */
 @media (max-width: 768px) {
     .staff-img-wrapper {
         width: 130px;
         height: 130px;
+    }
+}
+
+/* --- MOBİL ÜÇÜN CƏDVƏL OPTİMİZASİYASI --- */
+@media (max-width: 768px) {
+    /* Cədvəlin daşmasının qarşısını alırıq və üfüqi scroll yaradırıq */
+    .overflow-y-auto {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch; /* iPhone-larda hamar scroll üçün */
+    }
+
+    /* Table-ın genişliyini saxlayırıq ki, mobildə sıxılmasın */
+    table {
+        min-width: 500px; 
+    }
+
+    /* Form inputlarının mobildə alt-alta düşməsi (əgər hələ etməmisənsə) */
+    #add-crew-form, #add-staff-form {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 1rem !important;
+    }
+
+    /* Mobil üçün Action düymələrini böyüdürük (barmaqla basmaq asan olsun) */
+    button {
+        padding: 10px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    /* Masaüstü cədvəli gizlət */
+    table { display: none !important; }
+    
+    /* Mobil üçün kart konteyneri yarat */
+    .mobile-card {
+        display: block !important;
+        background: rgba(255, 255, 255, 0.03);
+        padding: 15px;
+        margin-bottom: 10px;
+        border-radius: 8px;
     }
 }

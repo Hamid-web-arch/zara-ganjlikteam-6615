@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Profile | GNC Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="bg-black text-white min-h-screen">
+
+    <div class="max-w-4xl mx-auto p-8 pt-20">
+        <div class="flex items-center justify-between mb-12">
+            <h1 class="font-fashion text-4xl text-white tracking-tighter">MY PROFILE</h1>
+            <div class="flex gap-4">
+                <div>
+                    <button onclick="window.location.href='index.htm'"
+                        class="text-[9px] uppercase tracking-[0.3em] border border-white/20 px-6 py-3 hover:bg-white hover:text-black transition">
+                        Back to Home
+                    </button>
+                    <button id="logout-btn"
+                        class="text-[9px] uppercase tracking-[0.3em] border border-white/20 px-6 py-3 hover:bg-white hover:text-black transition">
+                        LOGOUT
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-card p-10 rounded-sm flex flex-col md:flex-row items-center gap-10 border border-white/10">
+
+            <div class="relative group">
+                <div class="w-40 h-40 rounded-full overflow-hidden border border-white/10 bg-[#111]">
+                    <img id="profile-img"
+                        src="https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png"
+                        class="w-full h-full object-cover img-zara" alt="Profile">
+                </div>
+                <label
+                    class="absolute bottom-0 right-0 bg-white text-black p-2 rounded-full cursor-pointer opacity-0 group-hover:opacity-100 transition">
+                    <input type="file" id="upload-img" class="hidden">
+                    <span class="text-[8px] font-bold">EDIT</span>
+                </label>
+            </div>
+
+            <div class="flex-1 w-full space-y-8">
+                <div class="grid grid-cols-2 gap-8">
+                    <div>
+                        <label class="text-[8px] uppercase tracking-[0.2em] text-white/40">Full Name</label>
+                        <p id="profile-name" class="text-sm tracking-widest mt-1">Loading...</p>
+                    </div>
+                    <div>
+                        <label class="text-[8px] uppercase tracking-[0.2em] text-white/40">Role</label>
+                        <p id="profile-role" class="text-sm tracking-widest mt-1 uppercase">Loading...</p>
+                    </div>
+                    <div>
+                        <label class="text-[8px] uppercase tracking-[0.2em] text-white/40">ID Code</label>
+                        <p id="profile-id" class="text-sm tracking-widest mt-1">Loading...</p>
+                    </div>
+                    <div>
+                        <label class="text-[8px] uppercase tracking-[0.2em] text-white/40">Email</label>
+                        <p id="profile-email" class="text-sm tracking-widest mt-1">Loading...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-12 p-8 border border-white/5 bg-white/5 rounded-sm">
+            <h2 class="text-[10px] uppercase tracking-[0.3em] mb-6">Security Settings</h2>
+            <button id="change-password-btn"
+                class="text-[9px] uppercase tracking-[0.3em] border border-white/20 px-6 py-3 hover:bg-white hover:text-black transition">
+                Reset Password
+            </button>
+        </div>
+    </div>
+    <script type="module" src="js/staff-profile.js"></script>
+</body>
+
+</html>
